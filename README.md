@@ -1,0 +1,8 @@
+# STEMfit
+
+`STEMfit` is a package written in Julia for the analysis and fitting of (scanning) transmission electron microscopy (STEM) images.
+`STEMfit` was made to handle large images (as many as 10 000's of atoms) of moderately defective materials (i.e. with significant strain, twin/grain boundaries, etc.) with high performance and minimal user input. 
+
+The `examples` folder contains a [Jupyter Notebook](https://jupyter.org/) demonstrating the use of `STEMfit`.
+
+Note that `STEMfit` is in an early stage of development. Features may be added, removed or modified without notice.
