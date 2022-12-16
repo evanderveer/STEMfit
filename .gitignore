@@ -27,6 +27,7 @@ Manifest.toml
 *.txt
 *.db
 
+.vscode/
 src/new_features/
 test/
 deprecated/

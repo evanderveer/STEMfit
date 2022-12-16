@@ -23,8 +23,8 @@ function get_parameters(
 end
 
 #Include the gradient and hessian calculated by Symbolics.jl
-include("gaussian_hessian.jl")
-include("gaussian_gradient.jl")
+#include("gaussian_hessian.jl")
+#include("gaussian_gradient.jl")
 
 """
     intensity(

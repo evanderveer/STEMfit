@@ -1,17 +1,17 @@
 """
     find_atoms(
         image::Matrix{<:Gray{<:AbstractFloat}}
-        [,threshold::AbstractFloat,
-        use_adaptive::Bool,
-        window_size::Integer,
-        bias::Real]
+        [,threshold::Real = 0.0,
+        use_adaptive::Bool = true,
+        window_size::Integer = 8,
+        bias::Real = 0.8]
         ) 
         -> Tuple(Matrix{Float32}, Vector{Float32}, Vector{Float32}, Matrix{Gray{Float32}})
 
 Detect atoms in `image` using thresholding. Adaptive thresholding is used by default.
 
 If `threshold` is undefined, determine the optimum threshold value automatically.
-If use_adaptive is set true, a Niblack adaptive thresholding algorithm is used instead.
+If `use_adaptive` is set true, a Niblack adaptive thresholding algorithm is used instead.
 The adaptive thresholding can be controlled using the window_size and bias parameters.
 
 Returns a 2 x n matrix of atom centroids, a size n vector of atom widths,
@@ -25,7 +25,6 @@ function find_atoms(
     bias::Real = 0.8
 )   
 
-    #TODO: Implement diagnostic options
     if(threshold < 0.0 || threshold > 1.0) 
         throw(DomainError(threshold, "threshold must be between 0 and 1"))
     end   
@@ -53,7 +52,10 @@ function find_atoms(
                             for centroid in centroids
                            ])
 
-    return (centroid_matrix, sizes, intensities, bw_opt)
+    #Remove atoms which are very small (<10 px)
+    size_filter = sizes .< sqrt(10)
+
+    (centroid_matrix[size_filter], sizes[size_filter], intensities[size_filter], bw_opt)
 end
 
 """
@@ -90,15 +92,15 @@ end
 
 """
     filter_image(
-        image::Matrix{<:Gray{<:AbstractFloat}}
-        [,max_sv::Integer,
-        kernel_size::Integer]
+        image::Matrix{<:Gray{<:Real}}
+        [,max_sv::Integer = 30,
+        kernel_size::Integer = 3]
     ) 
     -> Matrix{<:Gray{<:AbstractFloat}
 
 Filter the image using Singular Value Decomposition and Gaussian convolution.
 
-num_sv is the number of singular values to use and kernel_size is the size of the
+`num_sv` is the number of singular values to use and `kernel_size` is the size of the
 gaussian kernel that is used for the convolution.
 """
 function filter_image(
@@ -110,7 +112,7 @@ function filter_image(
     svd_res = svd(image)
     U, Σ, Vᵀ = svd_res.U, Diagonal(svd_res.S), svd_res.Vt
     filt_im = Gray.(U[:,1:num_sv]*Σ[1:num_sv, 1:num_sv]*Vᵀ[1:num_sv,:])
-    imfilter(filt_im, Kernel.gaussian(kernel_size)) 
+    (imfilter(filt_im, Kernel.gaussian(kernel_size)), Σ)
 end
 
 """
