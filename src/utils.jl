@@ -160,6 +160,18 @@ function inverse_matrix(uc::UnitCell)
     inv([uc.vector_1 uc.vector_2])
 end
 
+function save_atomic_positions(
+    filename::String,
+    centroids::AbstractMatrix{<:Real},
+    widths::AbstractVector{<:Real},
+    intensities::AbstractVector{<:Real}
+)
+    f = open(filename, "w")
+    writedlm(f, ["y(px)" "x(px)" "width(px)" "intensity(arb.unit)"])
+    writedlm(f, [centroids' widths intensities])
+    close(f)
+end
+
 """
 Makes a randomized validation image. Returns the image and list of atom locations.
 """

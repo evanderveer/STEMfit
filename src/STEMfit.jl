@@ -41,7 +41,10 @@ module STEMfit
     import StaticArrays:
                     @MMatrix,
                     @MVector
+    import DelimitedFiles:
+                    writedlm
 
+                    
     include("findatoms.jl")
     include("finduc.jl")
     include("gaussianmodel.jl")

@@ -4,7 +4,8 @@
         [,threshold::Real = 0.0,
         use_adaptive::Bool = true,
         window_size::Integer = 8,
-        bias::Real = 0.8]
+        bias::Real = 0.8,
+        min_atom_size::Integer = 10]
         ) 
         -> Tuple(Matrix{Float32}, Vector{Float32}, Vector{Float32}, Matrix{Gray{Float32}})
 
@@ -12,7 +13,8 @@ Detect atoms in `image` using thresholding. Adaptive thresholding is used by def
 
 If `threshold` is undefined, determine the optimum threshold value automatically.
 If `use_adaptive` is set true, a Niblack adaptive thresholding algorithm is used instead.
-The adaptive thresholding can be controlled using the window_size and bias parameters.
+The adaptive thresholding can be controlled using the `window_size` and `bias` parameters. 
+`min_atom_size` defines the minimum number of pixels an atom must have.
 
 Returns a 2 x n matrix of atom centroids, a size n vector of atom widths,
 a size n vector of atom intensities and the binarized image. 
@@ -22,7 +24,8 @@ function find_atoms(
     threshold::Real = 0.0,
     use_adaptive::Bool = true,
     window_size::Integer = 8,
-    bias::Real = 0.8
+    bias::Real = 0.8,
+    min_atom_size::Integer = 10
 )   
 
     if(threshold < 0.0 || threshold > 1.0) 
@@ -53,9 +56,9 @@ function find_atoms(
                            ])
 
     #Remove atoms which are very small (<10 px)
-    size_filter = sizes .< sqrt(10)
+    size_filter = sizes .> sqrt(min_atom_size)
 
-    (centroid_matrix[size_filter], sizes[size_filter], intensities[size_filter], bw_opt)
+    (centroid_matrix[:, size_filter], sizes[size_filter], intensities[size_filter], bw_opt)
 end
 
 """
@@ -112,7 +115,7 @@ function filter_image(
     svd_res = svd(image)
     U, Σ, Vᵀ = svd_res.U, Diagonal(svd_res.S), svd_res.Vt
     filt_im = Gray.(U[:,1:num_sv]*Σ[1:num_sv, 1:num_sv]*Vᵀ[1:num_sv,:])
-    (imfilter(filt_im, Kernel.gaussian(kernel_size)), Σ)
+    (imfilter(filt_im, Kernel.gaussian(kernel_size)), svd_res.S)
 end
 
 """
