@@ -28,14 +28,56 @@ function plot_unit_cells( #Very ugly --> refactor
                     neighbors[1,:], 
                     xlim=xlim, 
                     ylim=ylim, 
-                    label=false;
+                    label=false,
+                    xaxis=false,
+                    yaxis=false;
                     kwargs...
                     )
         plot!(
               p, 
               unit_cell([uc.vector_1, uc.vector_2]), 
               opacity=.5, 
-              label="Unit cell " * string(i)
+              annotations=(xlim[2]*0.5, ylim[2]*0.8,"Unit cell " * string(i)),
+              annotationfontsize=10,
+              annotationhaligns=:center,
+              label=false,
+              c=:red
+              )
+        push!(uc_plots, p)
+    end
+    plot(uc_plots..., 
+         layout=(ceil(Int32,length(uc_plots)/4), 4), 
+         size = (140*1.7*4, 160*1.5*ceil(Int64,length(uc_plots)/4))
+         
+         )
+
+end
+
+function plot_unit_cells( #Very ugly --> refactor
+    unit_cells;
+    xlim=(-70,70),
+    ylim=(-70,70),
+    kwargs...
+)
+    unit_cell(vectors) = Shape(
+        [0,vectors[1][2], vectors[1][2]+vectors[2][2], vectors[2][2]],
+        [0,vectors[1][1], vectors[1][1]+vectors[2][1], vectors[2][1]]
+                                )
+
+    uc_plots = []
+    for (i,uc) in enumerate(unit_cells) 
+        p = plot( 
+              unit_cell([uc.vector_1, uc.vector_2]), 
+              opacity=.5, 
+              annotations=(xlim[2]*0.5, ylim[2]*0.8,"Unit cell " * string(i)),
+              annotationfontsize=10,
+              annotationhaligns=:center,
+              xlim=xlim, 
+              ylim=ylim, 
+              xaxis=false,
+              yaxis=false,
+              label=false,
+              c=:red
               )
         push!(uc_plots, p)
     end
@@ -160,15 +202,17 @@ function inverse_matrix(uc::UnitCell)
     inv([uc.vector_1 uc.vector_2])
 end
 
-function save_atomic_positions(
+function save_atomic_positions!(
     filename::String,
-    centroids::AbstractMatrix{<:Real},
-    widths::AbstractVector{<:Real},
-    intensities::AbstractVector{<:Real}
+    matrix::AbstractMatrix{<:Real};
+    headers::AbstractVector{<:String}
 )
+    if length(headers) != size(matrix)[2]
+        throw(ArgumentError("Incorrect number of headers."))
+    end
     f = open(filename, "w")
-    writedlm(f, ["y(px)" "x(px)" "width(px)" "intensity(arb.unit)"])
-    writedlm(f, [centroids' widths intensities])
+    writedlm(f, permutedims(headers), ',')
+    writedlm(f, matrix, ',')
     close(f)
 end
 

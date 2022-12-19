@@ -156,7 +156,9 @@ Find all possible unit cells from a matrix of nearest neighbor positions.
 Only return unit cells with a size in `uc_allowed_areas` and an angle
 in `uc_allowed_angles`. Unit cells whose angle or area is within `tolerance`
 of another unit cell are filtered out. Unit cells are returned sorted from 
-smallest to largest.
+smallest to largest. 
+Returns a matrix with columns of unit cell area, angle and basis vectors.
+Basis vectors are ordered such that the most in-plane vector always comes first.
 """
 function unit_cells_from_nn(
     neighbors::AbstractMatrix{<:AbstractFloat};
@@ -187,9 +189,19 @@ function unit_cells_from_nn(
     #Sort by unit cell volume
     sorted_ucs = allowed_ucs[sortperm(allowed_ucs[:, 1]), :]
 
-    ##TODO: Implement filtering
+    #Filter out identical unit cells
     filtered_ucs = filter_unit_cells(sorted_ucs, tolerance)
  
+    #Optionally flip the basis vectors, so the most in-plane Vector
+    #always comes first
+    for row in eachrow(filtered_ucs)
+        basis_vector_angles = uc_angle.(row[3])
+        distances_to_ip = dist_to_ip.(basis_vector_angles)
+        if distances_to_ip[1] > distances_to_ip[2]
+            row[3][1], row[3][2] = row[3][2], row[3][1]
+        end
+    end
+
     #Return a list of UnitCell structs
     UnitCell.(eachrow(filtered_ucs))::Vector{UnitCell}
 end
@@ -222,3 +234,12 @@ function filter_unit_cells(
     end
     filtered_unit_cells
 end
+
+"""
+    dist_to_ip(
+                angle::Real
+    )
+
+Calculates the angular distance of `angle` to the in-plane direction   
+"""
+dist_to_ip(angle::Real) = minimum([abs(angle-270), abs(angle-90)])

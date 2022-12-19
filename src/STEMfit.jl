@@ -56,6 +56,7 @@ module STEMfit
     include("latticemodel.jl")
     include("imagemodel.jl")
     include("background.jl")
+    include("transformation.jl")
     include("utils.jl")
 
 end
