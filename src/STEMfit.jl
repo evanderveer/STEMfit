@@ -43,7 +43,12 @@ module STEMfit
                     @MVector
     import DelimitedFiles:
                     writedlm
-
+    import Plots:
+                    scatter,
+                    plot,
+                    scatter!,
+                    plot!,
+                    Shape
                     
     include("findatoms.jl")
     include("finduc.jl")

@@ -40,8 +40,8 @@ function plot_unit_cells( #Very ugly --> refactor
         push!(uc_plots, p)
     end
     plot(uc_plots..., 
-         layout=(ceil(Int32,length(uc_plots)/6), 6), 
-         size = (140*1.7*6, 160*1.5*ceil(Int32,length(uc_plots)/6))
+         layout=(ceil(Int32,length(uc_plots)/4), 4), 
+         size = (140*1.7*4, 160*1.5*ceil(Int64,length(uc_plots)/4))
          
          )
 

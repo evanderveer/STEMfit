@@ -9,12 +9,13 @@ end
 """
     find_unit_cells(
                     centroids::Matrix{<:Real}[,
-                    num_nn::Integer,
-                    cluster_radius::Real,
-                    min_cluster_size::Integer,
-                    uc_allowed_areas::Tuple{Real, Real},
-                    uc_allowed_angles::Tuple{Real, Real},
-                    min_neighbor_dist::Real 
+                    num_nn::Integer = 10,
+                    cluster_radius::Real = 0.2,
+                    min_cluster_size::Integer = 50,
+                    uc_allowed_areas::UnitRange{<:Real} = 10:Inf,
+                    uc_allowed_angles::UnitRange{<:Real} = 5:360,
+                    min_neighbor_dist::Real = 5,
+                    filter_tolerance::Real = 10
                     ])
                     -> Tuple{Matrix{Any}, Matrix{<:AbstractFloat}, KDTree}
 
@@ -32,15 +33,17 @@ using a DBSCAN clustering algorithm. The potential unit cells are filtered using
 - `uc_allowed_areas::Tuple{Real, Real} = (10, Inf)`: Range of allowed unit cell areas
 - `uc_allowed_angles::Tuple{Real, Real} = (85, 95)`: Range of allowed unit cell uc_angles
 - `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
+- `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
 """
 function find_unit_cells(
     centroids::Matrix{<:Real};
-    num_nn::Integer = 40,
-    cluster_radius::Real = 0.05,
-    min_cluster_size::Integer = 1000,
-    uc_allowed_areas::Tuple{Real, Real} = (10, Inf),
-    uc_allowed_angles::Tuple{Real, Real} = (85, 95),
-    min_neighbor_dist::Real = 15
+    num_nn::Integer = 10,
+    cluster_radius::Real = 0.2,
+    min_cluster_size::Integer = 50,
+    uc_allowed_areas::UnitRange{<:Real} = 10:1000000,
+    uc_allowed_angles::UnitRange{<:Real} = 5:360,
+    min_neighbor_dist::Real = 5,
+    filter_tolerance::Real = 0.1
 )
 
     #Find nearest neighbors for all atoms in centroids
@@ -59,7 +62,8 @@ function find_unit_cells(
     sorted_uc = unit_cells_from_nn(
                                     neighbors, 
                                     uc_allowed_angles=uc_allowed_angles, 
-                                    uc_allowed_areas=uc_allowed_areas
+                                    uc_allowed_areas=uc_allowed_areas,
+                                    tolerance=filter_tolerance
                                     )
 
     return (sorted_uc, neighbors, atom_tree)
@@ -75,13 +79,13 @@ for each cluster in centroids.
 The relative positions are rounded to the nearest integer.
 """
 function find_neighbors(
-    centroids::Matrix{<:AbstractFloat},
+    centroids::AbstractMatrix{T},
     num_neighbors::Integer = 40
-)
+) where {T<:AbstractFloat}
 
     atom_tree = KDTree(centroids)
 
-    vectors = Matrix{Float32}(undef, 2, num_neighbors*size(centroids)[2])
+    vectors = Matrix{T}(undef, 2, num_neighbors*size(centroids)[2])
 
     #Find num_neighbors nearest neighbors for each atom
     idxs::Vector{Vector{Int32}}, _ = knn(atom_tree, centroids, num_neighbors)
@@ -110,10 +114,10 @@ see the Clustering.jl documentation. Clusters closer than `min_neighbor_dist`
 
 """
 function find_neighbor_clusters(
-    neighbors::Matrix{T};
+    neighbors::AbstractMatrix{T};
     radius::Real,
     min_cluster_size::Integer,
-    min_neighbor_dist::Real = 15.0
+    min_neighbor_dist::Real = 5
 )   where {T<:AbstractFloat}
 
     #TODO: Find a more memory efficient clustering algorithm
@@ -142,42 +146,79 @@ end
     unit_cells_from_nn(
                         neighbors::Matrix{<:AbstractFloat}, 
                         uc_allowed_areas::Tuple{<:Real, <:Real},
-                        uc_allowed_angles::Tuple{<:Real, <:Real}
+                        uc_allowed_angles::Tuple{<:Real, <:Real},
+                        tolerance::Real = 0.05
                         )
                         -> Matrix{Any}
 
 Find all possible unit cells from a matrix of nearest neighbor positions. 
 
 Only return unit cells with a size in `uc_allowed_areas` and an angle
-in `uc_allowed_angles`. Unit cells are returned sorted from smallest to largest.
+in `uc_allowed_angles`. Unit cells whose angle or area is within `tolerance`
+of another unit cell are filtered out. Unit cells are returned sorted from 
+smallest to largest.
 """
 function unit_cells_from_nn(
-    neighbors::Matrix{<:AbstractFloat};
-    uc_allowed_areas::Tuple{<:Real, <:Real},
-    uc_allowed_angles::Tuple{<:Real, <:Real}
+    neighbors::AbstractMatrix{<:AbstractFloat};
+    uc_allowed_areas::UnitRange{<:Real},
+    uc_allowed_angles::UnitRange{<:Real},
+    tolerance::Real = 0.05
 )
 
-    #Each combination of two basis vectors is a potential unit cell
-    unit_cells = collect(combinations(collect(eachcol(neighbors)), 2))
+    #Each combination of two basis vectors is a potential unit cell edge
+    #use getindex.() to flatten the array one level
+    unit_cell_edges = getindex.(diff.(collect(combinations(collect(eachcol(neighbors)), 2))), 1)
+
+    #Each combination of two edges makes a unit cell
+    unit_cells = collect(combinations(unit_cell_edges, 2))
 
     #Calculate unit cell volume, round to nearest integer
-    uc_areas = round.(Int32, uc_area.(unit_cells))
-    uc_angles = round.(Int32, uc_angle.(unit_cells))
+    uc_areas = round.(Int64, uc_area.(unit_cells))
+    uc_angles = round.(Int64, uc_angle.(unit_cells))
     uc_matrix = [uc_areas uc_angles unit_cells]
 
     #Select only nonzero unit cells
-    allowed_area = uc_allowed_areas[1] .< uc_areas .< uc_allowed_areas[2]
-    allowed_angle = uc_allowed_angles[1] .< uc_angles .< uc_allowed_angles[2]
+    allowed_area = [i ∈ uc_allowed_areas for i in uc_areas]
+    allowed_angle = [i ∈ uc_allowed_angles for i in uc_angles]
 
     #Only select unit cells which have an allowed angle and area
-    allowed_ucs = uc_matrix[allowed_angle .+ allowed_area .== 2, :]
+    allowed_ucs = uc_matrix[allowed_angle .&& allowed_area, :]
     
     #Sort by unit cell volume
     sorted_ucs = allowed_ucs[sortperm(allowed_ucs[:, 1]), :]
 
+    ##TODO: Implement filtering
+    filtered_ucs = filter_unit_cells(sorted_ucs, tolerance)
+ 
     #Return a list of UnitCell structs
-    UnitCell.(eachrow(sorted_ucs))
+    UnitCell.(eachrow(filtered_ucs))::Vector{UnitCell}
 end
 
+"""
+    filter_unit_cells(
+                        unit_cells::AbstractMatrix,
+                        tolerance::Real
+    )
 
+Takes a sorted matrix of unit cells and filters out unit cells which 
+have an angle or area is within `tolerance` of another unit cell in 
+the list. `tolerance` is the relative difference between unit cells.  
+"""
+function filter_unit_cells(
+    unit_cells::AbstractMatrix,
+    tolerance::Real
+)
+    filtered_unit_cells = Matrix{Any}(undef, 0, 3)
+    #Use permutedims() instead of ' so the third element does not get transposed
+    filtered_unit_cells = [filtered_unit_cells; permutedims(unit_cells[1, :])]
 
+    for unit_cell in eachrow(unit_cells)
+        #If either the angle or the area are sufficiently different, consider this 
+        #a new unit cell.
+        if abs(unit_cell[1] - filtered_unit_cells[end,1])/unit_cell[1] > tolerance ||
+            abs(unit_cell[2] - filtered_unit_cells[end,2])/unit_cell[2] > tolerance
+            filtered_unit_cells = [filtered_unit_cells; permutedims(unit_cell)]
+        end
+    end
+    filtered_unit_cells
+end
