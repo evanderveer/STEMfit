@@ -6,3 +6,17 @@
 The `examples` folder contains a [Jupyter Notebook](https://jupyter.org/) demonstrating the use of `STEMfit`.
 
 Note that `STEMfit` is in an early stage of development. Features may be added, removed or modified without notice.
+
+## How to install
+
+Download the [Julia language](https://julialang.org/) or install the Julia extension in [Visual Studio Code](https://code.visualstudio.com/). To use notebooks like the example notebook, also download and install [Jupyter](https://jupyter.org/) or the Jupyter extension to VSCode. Then add `STEMfit` to your environment using
+
+```
+] add https://github.com/evanderveer/STEMfit/
+```
+
+or 
+
+```
+using Pkg; Pkg.add("https://github.com/evanderveer/STEMfit/")
+```
