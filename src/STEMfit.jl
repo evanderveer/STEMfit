@@ -3,7 +3,8 @@ module STEMfit
     import NearestNeighbors: 
                     NNTree, 
                     KDTree, 
-                    knn
+                    knn,
+                    nn
     import Images: 
                     Gray, 
                     load, 
@@ -57,6 +58,7 @@ module STEMfit
     include("imagemodel.jl")
     include("background.jl")
     include("transformation.jl")
+    include("latticeparameter.jl")
     include("utils.jl")
 
 end
