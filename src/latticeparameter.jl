@@ -64,3 +64,17 @@ function calculate_lattice_parameters(
     #Transform back
     abs.([vec_1 vec_2] * latt_param_matrix)
 end
+
+function plot_image_with_grid(
+    image::Union{AbstractMatrix{<:Gray{<:AbstractFloat}}, AbstractMatrix{<:AbstractFloat}},
+    grid_spacing::Integer = 50
+)
+    p = plot(   image, 
+                size=size(image), 
+                alpha=0.5, 
+                xticks=grid_spacing*(0:floor(size(image)[2]/grid_spacing)), 
+                yticks=grid_spacing*(0:floor(size(image)[1]/grid_spacing))
+            )
+    hline!(grid_spacing * (0:floor(size(image)[1]/grid_spacing)), c=:red, style=:dash, label=false, linewidth=2)
+    vline!(grid_spacing * (0:floor(size(image)[2]/grid_spacing)), c=:red, style=:dash, label=false, linewidth=2)
+end

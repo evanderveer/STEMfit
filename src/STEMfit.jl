@@ -49,7 +49,9 @@ module STEMfit
                     plot,
                     scatter!,
                     plot!,
-                    Shape
+                    Shape,
+                    hline!,
+                    vline!
                     
     include("findatoms.jl")
     include("finduc.jl")
