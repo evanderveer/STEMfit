@@ -15,7 +15,7 @@ function get_pixel_size(
 
     if abs(ip_pixel_size-oop_pixel_size)/oop_pixel_size > 0.01
         error("In-plane and out-of-plane pixel sizes too different.
-Set return_two_sizes = true to return ip and oop sizes separately.")
+Set return_two_sizes = true to return horizontal and vertical sizes separately.")
     end
 
     mean([ip_pixel_size, oop_pixel_size])    

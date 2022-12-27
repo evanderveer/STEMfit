@@ -96,25 +96,33 @@ end
 """
     filter_image(
         image::Matrix{<:Gray{<:Real}}
-        [,max_sv::Integer = 30,
-        kernel_size::Integer = 3]
+        [,number_of_singular_vectors::Union{Integer, Symbol} = :auto,
+        kernel_size::Integer = 1]
     ) 
     -> Matrix{<:Gray{<:AbstractFloat}
 
 Filter the image using Singular Value Decomposition and Gaussian convolution.
 
-`num_sv` is the number of singular values to use and `kernel_size` is the size of the
-gaussian kernel that is used for the convolution.
+`number_of_singular_vectors` is the number of singular values to use. If set to :auto, 
+it will be determined automatically. `kernel_size` is the size of the gaussian kernel 
+that is used for the convolution. For low-resolution images, set `kernel_size = 1`.
 """
 function filter_image(
     image::Matrix{<:Gray{<:Real}};
-    num_sv::Integer = 30,
-    kernel_size::Integer = 3
+    number_of_singular_vectors::Union{Integer, Symbol} = :auto,
+    kernel_size::Integer = 1
 )
 
     svd_res = svd(image)
     U, Σ, Vᵀ = svd_res.U, Diagonal(svd_res.S), svd_res.Vt
-    filt_im = Gray.(U[:,1:num_sv]*Σ[1:num_sv, 1:num_sv]*Vᵀ[1:num_sv,:])
+    if number_of_singular_vectors == :auto
+        number_of_singular_vectors = sum(svd_res.S .> 2)
+    end
+    filt_im = Gray.(
+                    U[:,1:number_of_singular_vectors]*
+                    Σ[1:number_of_singular_vectors, 1:number_of_singular_vectors]*
+                    Vᵀ[1:number_of_singular_vectors,:]
+                    )
     (imfilter(filt_im, Kernel.gaussian(kernel_size)), svd_res.S)
 end
 

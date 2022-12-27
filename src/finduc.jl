@@ -177,7 +177,9 @@ function unit_cells_from_nn(
     #Calculate unit cell volume, round to nearest integer
     uc_areas = round.(Int64, uc_area.(unit_cells))
     uc_angles = round.(Int64, uc_angle.(unit_cells))
-    uc_matrix = [uc_areas uc_angles unit_cells]
+    uc_squareness = round.(Int64, STEMfit.uc_squareness.(unit_cells))
+    
+    uc_matrix = [uc_areas uc_angles uc_squareness unit_cells]
 
     #Select only nonzero unit cells
     allowed_area = [i ∈ uc_allowed_areas for i in uc_areas]
@@ -220,19 +222,18 @@ function filter_unit_cells(
     unit_cells::AbstractMatrix,
     tolerance::Real
 )
-    filtered_unit_cells = Matrix{Any}(undef, 0, 3)
+    filtered_unit_cells = Matrix{Any}(undef, 0, 4)
     #Use permutedims() instead of ' so the third element does not get transposed
     filtered_unit_cells = [filtered_unit_cells; permutedims(unit_cells[1, :])]
 
     for unit_cell in eachrow(unit_cells)
-        #If either the angle or the area are sufficiently different, consider this 
-        #a new unit cell.
-        if abs(unit_cell[1] - filtered_unit_cells[end,1])/unit_cell[1] > tolerance ||
-            abs(unit_cell[2] - filtered_unit_cells[end,2])/unit_cell[2] > tolerance
+        #If this unit cell is not yet in the list, add it
+        if all([is_different_unit_cell(previous_unit_cell, unit_cell, tolerance) 
+                    for previous_unit_cell in eachrow(filtered_unit_cells)])
             filtered_unit_cells = [filtered_unit_cells; permutedims(unit_cell)]
         end
     end
-    filtered_unit_cells
+    filtered_unit_cells[:, [1,2,4]]
 end
 
 """
@@ -243,3 +244,20 @@ end
 Calculates the angular distance of `angle` to the in-plane direction   
 """
 dist_to_ip(angle::Real) = minimum([abs(angle-270), abs(angle-90)])
+
+function uc_squareness(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
+    (side_1, side_2) = norm.(basis_vectors)
+    if side_1 >= side_2
+        return side_1/side_2
+    else
+        return side_2/side_1
+    end
+end 
+
+function is_different_unit_cell(
+    uc_1,
+    uc_2,
+    tolerance
+)
+    any([abs.(uc_1[i] .- uc_2[i])./uc_2[i] .> tolerance for i in 1:3])
+end
