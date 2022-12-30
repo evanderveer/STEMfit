@@ -4,7 +4,8 @@ module STEMfit
                     NNTree, 
                     KDTree, 
                     knn,
-                    nn
+                    nn,
+                    inrange
     import Images: 
                     Gray, 
                     load, 
@@ -23,9 +24,6 @@ module STEMfit
                     binarize
     import ImageBinarization.BinarizationAPI:
                     AbstractImageBinarizationAlgorithm
-    import Clustering: 
-                    dbscan, 
-                    ClusteringResult
     import LinearAlgebra: 
                     svd, 
                     Diagonal,
@@ -60,6 +58,7 @@ module STEMfit
                     vline!
                     
     include("findatoms.jl")
+    include("dbscan.jl")
     include("finduc.jl")
     include("gaussianmodel.jl")
     include("latticemodel.jl")
