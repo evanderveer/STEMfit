@@ -188,6 +188,7 @@ end
 function residual_image(im1, im2)
     res_img = abs.(Gray.(im1) .- Gray.(im2))
     println("Maximum deviation: "*string(Float16(maximum(res_img)*100))*" %")
+    println("Total residual: "*string(Float16(residual(im1,im2))))
     stretch_image(res_img)
 end
 

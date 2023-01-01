@@ -1,4 +1,4 @@
-mutable struct LatticeModel{T}
+struct LatticeModel{T}
     init_pos_list::Matrix{T}
     init_A::Vector{T}
     init_a::Vector{T}

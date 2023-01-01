@@ -1,4 +1,4 @@
-mutable struct Gaussian{T} 
+struct Gaussian{T<:Real} 
     y0::T
     x0::T
     A::T
@@ -28,7 +28,7 @@ end
 
 """
     intensity(
-        model::Gaussian,
+        model::Gaussian{<:Real},
         x:Real,
         y::Real
     )
@@ -37,7 +37,7 @@ end
 Returns the intensity of the Gaussian *model* at the point (*x*, *y*).
 """
 function intensity(
-    model::Gaussian,
+    model::Gaussian{<:Real},
     x::Real,
     y::Real
     )
@@ -47,8 +47,8 @@ end
 
 """
     intensity(
-        model_vector::AbstractVector{Gaussian},
-        x:Real,
+        model::AbstractVector{<:Gaussian{<:Real}},
+        x::Real,
         y::Real
     )
     -> Real
@@ -56,13 +56,13 @@ end
 Returns the summed intensity of the vector of Gaussians *model_vector* at the point (*x*, *y*).
 """
 function intensity(
-    model_vec::AbstractVector{Gaussian},
+    model::AbstractVector{<:Gaussian{<:Real}},
     x::Real,
     y::Real
     )
     sum = 0f0
-    for model in model_vector
-        (;y0, x0, A, a, b, c) = model
+    for gauss in model
+        (;y0, x0, A, a, b, c) = gauss
         sum += A*exp(-(a * (x - x0)^2 + 2 * b * (x - x0) * (y - y0) + c * (y - y0)^2))
     end
     sum

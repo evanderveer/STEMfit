@@ -10,10 +10,10 @@ function set_background!(
     model::ImageModel,
     value::Matrix{<:Gray{<:Real}}
 )
-    if model.size != size(values)
+    if model.model_size != size(value)
         throw(ArgumentError("The size of the background matrix is not correct."))
     end
-    model.background = Float32.(values)
+    model.background = Float32.(value);
 end
 
 """
@@ -28,7 +28,7 @@ function set_background!(
     model::ImageModel,
     value::Real
 )
-    model.background = fill(Float32(value), model.size...)
+    model.background = fill(Float32(value), model.model_size...);
 end
 
 """
@@ -103,4 +103,17 @@ function get_kernels(
     end
 
     (minmap_kernel, gaussian_kernel)
+end
+
+function get_intensity_above_background(
+    positions::AbstractMatrix{<:Real},
+    intensities::AbstractVector{<:Real},
+    background::AbstractMatrix{<:Gray{<:Real}}
+)
+    A = similar(intensities)
+    for (n, (I, pos)) in enumerate(zip(intensities, eachcol(positions)))
+        bck_intensity = background[round.(Int64, pos)...]
+        A[n] = I - bck_intensity
+    end
+    A
 end

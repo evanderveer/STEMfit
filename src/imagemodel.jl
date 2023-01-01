@@ -1,94 +1,84 @@
 mutable struct ImageModel
-    size::Tuple
-    lattices::Vector{LatticeModel}
-    background::Matrix{Float32} 
-    ImageModel(size) = new(size, [], make_background(size, 0)) #Construct initially without any lattices and zero background
+    model_size::Tuple
+    init_pos_list::AbstractMatrix{<:AbstractFloat}
+    init_A::AbstractVector{<:AbstractFloat}
+    init_a::AbstractVector{<:AbstractFloat}
+    init_b::AbstractVector{<:AbstractFloat}
+    init_c::AbstractVector{<:AbstractFloat}
+    gaussian_list::Vector{Gaussian{<:AbstractFloat}}
+    background::Matrix{<:AbstractFloat} 
+    ImageModel(model_size, init_pos_list, init_A, init_a, init_b, init_c) = begin
+        size(init_pos_list)[2] == 
+        length(init_A) == 
+        length(init_a) == 
+        length(init_b) == 
+        length(init_c) || throw(ArgumentError("arguments must have the same length"))
+        gaussian_list = make_gaussians(init_pos_list, init_A, init_a, init_b, init_c)
+        #Construct initially without any atoms and zero background
+        new(
+            model_size, 
+            init_pos_list, 
+            init_A, 
+            init_a, 
+            init_b, 
+            init_c, 
+            gaussian_list, 
+            zeros(Float64, model_size)
+            ) 
+    end
 end
 
 """
-    add_lattice!(
-        model::ImageModel,
-        init_pos_list,
+    reset_model!(
+        model::ImageModel
+    )
+
+Reset all gaussians in the model to their initial parameters.
+"""
+function reset_model!(
+    model::ImageModel
+    )
+    model.gaussian_list = make_gaussians(
+                            model.init_pos_list,
+                            model.init_A,
+                            model.init_a,
+                            model.init_b,
+                            model.init_c
+                            )
+end
+
+"""
+    make_gaussians(
+        init_pos_list::AbstractMatrix{T}, 
+        init_A::AbstractVector{T}, 
+        init_a::AbstractVector{T}, 
+        init_b::AbstractVector{T}, 
+        init_c::AbstractVector{T}
+    ) where {T<:Real}
+    -> Vector{Gaussian{T}}
+
+Makes a vector of Gaussian structs from lists of initial parameters.
+"""
+function make_gaussians(
+    init_pos_list::AbstractMatrix{<:Real}, 
+    init_A::AbstractVector{<:Real}, 
+    init_a::AbstractVector{<:Real}, 
+    init_b::AbstractVector{<:Real}, 
+    init_c::AbstractVector{<:Real}
+    ) 
+
+    gaussian_list = Vector{Gaussian}([])
+    for (pos, A, a, b, c) in zip(
+        eachcol(init_pos_list),
         init_A,
         init_a,
         init_b,
         init_c
     )
-
-Adds a new LatticeModel to *model*.lattices.
-"""
-function add_lattice!( #Probably should get rid of lattices alltogether
-    model::ImageModel,
-    init_pos_list,
-    init_A,
-    init_a,
-    init_b,
-    init_c
-    )
-
-    new_lattice = LatticeModel(#FIX
-        init_pos_list,
-        init_A,
-        init_a,
-        init_b,
-        init_c,
-        []
-        )
-    push!(model.lattices, new_lattice);
-end
-
-"""
-    reset_lattices!(
-        model::ImageModel
-    )
-
-Remove all lattices from *model*.lattices.
-"""
-function reset_lattices!(
-    model::ImageModel
-    )
-    model.lattices = Vector{LatticeModel}[]
-end
-
-"""
-    initialize!(
-        model::ImageModel
-    )
-
-Initialize all lattices in *model*.lattices.
-"""
-function initialize!(
-    model::ImageModel
-    )
-    for lattice in model.lattices
-        initialize!(lattice)
+        new_gaussian = Gaussian(Float64.(pos)..., Float64(A), Float64(a), Float64(b), Float64(c)) 
+        push!(gaussian_list, new_gaussian)
     end
-end
-
-"""
-    intensity(
-        model::ImageModel,
-        x:Real,
-        y::Real,
-        mask_dist::Real
-    )
-    -> Real
-
-Returns the summed intensity of the ImageModel *model* at the point (*x*, *y*). 
-Only considers gaussians within *mask_dist* of (x, y).
-"""
-function intensity(
-    model::ImageModel,
-    x::Real,
-    y::Real,
-    mask_size::Real
-    )
-
-    intens = model.background[round.(Int64,(y,x))...] 
-    for lattice in model.lattices
-        intens += intensity(lattice, x, y, mask_size)
-    end
-    return intens
+    gaussian_list
 end
 
 """
@@ -111,11 +101,11 @@ function intensity(
     y::Real,
     tree::NNTree,
     num_gaussians::Integer = 10
-    )
+    ) 
 
-    intens = model.background[round.(Int64,(y,x))...]::Float32
+    intens = model.background[round.(Int64,(y,x))...]
     idxs = knn(tree, [y,x], num_gaussians)[1]
-    intens += intensity(model.lattices[1].gaussian_list[idxs], x, y)
+    intens += intensity(model.gaussian_list[idxs], x, y)
     return intens
 end
 
@@ -155,7 +145,7 @@ function produce_image(
     )
 
     # If no NNTree is passed, construct one
-    tree = KDTree(hcat([lat.init_pos_list' for lat in model.lattices]...))
+    tree = KDTree(model.init_pos_list)
     
     image = Matrix{Float32}(undef, length(yrange), length(xrange))
 
@@ -169,8 +159,8 @@ function produce_image(
     num_gaussians::Integer = 10
     )
 
-    xrange = (1:model.size[2])
-    yrange = (1:model.size[1])
+    xrange = (1:model.model_size[2])
+    yrange = (1:model.model_size[1])
 
     image = Matrix{Float32}(undef, length(yrange), length(xrange))
 
@@ -184,10 +174,10 @@ function produce_image(
     )
 
     # If no NNTree is passed, construct one
-    tree = KDTree(hcat([lat.init_pos_list' for lat in model.lattices]...))
+    tree = KDTree(model.init_pos_list)
 
-    xrange = (1:model.size[2])
-    yrange = (1:model.size[1])
+    xrange = (1:model.model_size[2])
+    yrange = (1:model.model_size[1])
 
     image = Matrix{Float32}(undef, length(yrange), length(xrange))
 
@@ -215,13 +205,51 @@ function fill_image!(
     tree::NNTree,
     num_gaussians::Int64
 )
-    for (column, ypos) in enumerate(yrange)
-        for (row, xpos) in enumerate(xrange)
+    Threads.@threads for (column, ypos) in collect(enumerate(yrange))
+        Threads.@threads for (row, xpos) in collect(enumerate(xrange))
             image[column,row] = intensity(model, xpos, ypos, tree, num_gaussians)
         end
     end
 end
 
+function transform_gaussian_parameters(
+    σ_X::Real,
+    σ_Y::Real,
+    θ::Real
+)
+    a = cos(θ)^2/(2*σ_X^2) + sin(θ)^2/(2*σ_Y^2)
+    c = sin(θ)^2/(2*σ_X^2) + cos(θ)^2/(2*σ_Y^2)
+    b = -sin(2*θ)/(4*σ_X^2) + sin(2*θ)/(4*σ_Y^2)
+    (a, b, c)
+end
+
+function get_initial_gaussian_parameters(
+    σ_X::AbstractVector{<:Real},
+    σ_Y::AbstractVector{<:Real},
+    θ::AbstractVector{<:Real}
+) 
+    length(σ_X) == length(σ_Y) == length(θ) || 
+            throw(ArgumentError("arguments must have the same length"))
 
 
+    a = Vector{Float64}(undef, length(θ))
+    b = Vector{Float64}(undef, length(θ))
+    c = Vector{Float64}(undef, length(θ))
+    for (n,(i,j,k)) in enumerate(zip(σ_X,σ_Y,θ))
+        (a[n], b[n], c[n]) = transform_gaussian_parameters(i,j,k)
+    end
+    (a, b, c)
+end
 
+function get_initial_gaussian_parameters(
+    σ_X::AbstractVector{<:Real},
+    σ_Y::AbstractVector{<:Real}
+)
+    get_initial_gaussian_parameters(σ_X, σ_Y, zeros(length(σ_X)))
+end
+
+function get_initial_gaussian_parameters(
+    σ::AbstractVector{<:Real}
+)
+    get_initial_gaussian_parameters(σ, σ, zeros(length(σ)))
+end
