@@ -15,7 +15,8 @@ module STEMfit
                     component_centroids,
                     component_lengths,
                     mapwindow, 
-                    N0f8
+                    N0f8, 
+                    mosaicview
     import ImageBinarization:
                     Niblack,
                     binarize
