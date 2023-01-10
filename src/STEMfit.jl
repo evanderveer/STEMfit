@@ -29,7 +29,8 @@ module STEMfit
                     UpperTriangular,
                     cross,
                     dot, 
-                    norm
+                    norm,
+                    cholesky
     import Combinatorics:
                     combinations,
                     sortperm
