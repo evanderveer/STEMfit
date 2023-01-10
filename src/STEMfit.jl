@@ -62,6 +62,7 @@ module STEMfit
     include("background.jl")
     include("transformation.jl")
     include("latticeparameter.jl")
+    include("gaussianfitting.jl")
     include("utils.jl")
 
 end
