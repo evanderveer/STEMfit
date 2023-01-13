@@ -44,13 +44,13 @@ function find_atoms(
     #The first element corresponds to the background
     centroids = component_centroids(labels_opt)[2:end]
     #Turn the centroids vector into a 2 x n matrix
-    centroid_matrix = Matrix{Float32}([j[i] for j in centroids, i in 1:2]')
+    centroid_matrix = Matrix{Float64}([j[i] for j in centroids, i in 1:2]')
 
     #The width of a cluster is appox. the square root of its area
-    sizes = Float32.(sqrt.(component_lengths(labels_opt)))[2:end]
+    sizes = Float64.(sqrt.(component_lengths(labels_opt)))[2:end]
 
     #Estimate the intesity from the image value at the cluster centroid
-    intensities = Float32.([
+    intensities = Float64.([
                             image[round.(Int32, centroid)...] 
                             for centroid in centroids
                            ])

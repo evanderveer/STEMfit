@@ -53,19 +53,14 @@ end
     )
     -> Real
 
-Returns the summed intensity of the vector of Gaussians *model_vector* at the point (*x*, *y*).
+Returns the summed intensity of the vector of Gaussians *model* at the point (*x*, *y*).
 """
 function intensity(
-    model::AbstractVector{<:Gaussian{<:Real}},
+    model::AbstractVector{<:Gaussian{T}},
     x::Real,
     y::Real
-    )
-    sum = 0f0
-    for gauss in model
-        (;y0, x0, A, a, b, c) = gauss
-        sum += A*exp(-(a * (x - x0)^2 + 2 * b * (x - x0) * (y - y0) + c * (y - y0)^2))
-    end
-    sum
+    ) where {T<:Real}
+    sum(intensity(g, x, y) for g in model)::T
 end
 
 """

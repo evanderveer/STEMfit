@@ -30,7 +30,8 @@ module STEMfit
                     cross,
                     dot, 
                     norm,
-                    cholesky
+                    cholesky,
+                    Hermitian
     import Combinatorics:
                     combinations,
                     sortperm

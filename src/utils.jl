@@ -192,9 +192,6 @@ function residual_image(im1, im2)
     stretch_image(res_img)
 end
 
-function residual(im1, im2)
-    Float32(sum((im1 .- im2).^2))
-end
 
 function avg_perc_dev(im1, im2)
     a = [abs(px1-px2)/px1 for (px1, px2) in zip(im1,im2)]
