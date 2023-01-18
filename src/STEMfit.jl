@@ -19,7 +19,10 @@ module STEMfit
                     mosaicview
     import ImageBinarization:
                     Niblack,
+                    Sauvola,
                     binarize
+    import ImageBinarization.BinarizationAPI:
+                    AbstractImageBinarizationAlgorithm
     import Clustering: 
                     dbscan, 
                     ClusteringResult

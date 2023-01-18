@@ -9,15 +9,15 @@ end
 
 """
     get_parameters(
-        model::Gaussian
+        model::Gaussian{T}
     )
-    -> Vector{Float32}
+    -> Vector{T}
 
 Returns the parameters of the Gaussian *model*.
 """
 function get_parameters(
-    model::Gaussian
-)
+    model::Gaussian{T}
+) where T
     (;y0, x0, A, a, b, c) = model
     [y0, x0, A, a, b, c]
 end

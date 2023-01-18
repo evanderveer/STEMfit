@@ -185,13 +185,25 @@ function stretch_image(image)
     (image .- im_min) ./ (im_max - im_min)
 end
 
-function residual_image(im1, im2)
+function residual_image(im1, im2; no_text = false)
     res_img = abs.(Gray.(im1) .- Gray.(im2))
-    println("Maximum deviation: "*string(Float16(maximum(res_img)*100))*" %")
-    println("Total residual: "*string(Float16(residual(im1,im2))))
+    if !no_text
+        println("Maximum deviation: "*string(Float16(maximum(res_img)*100))*" %")
+        println("Total residual: "*string(Float16(residual(im1,im2))))
+    end
     stretch_image(res_img)
 end
 
+function enlarge_image(image, enlargement_factor)
+    [
+        image[
+            floor(Int64, i/enlargement_factor), 
+            floor(Int64, j/enlargement_factor)
+            ] 
+            for i in enlargement_factor:size(image)[1]*enlargement_factor, 
+                j in enlargement_factor:size(image)[2]*enlargement_factor
+    ]
+end
 
 function avg_perc_dev(im1, im2)
     a = [abs(px1-px2)/px1 for (px1, px2) in zip(im1,im2)]

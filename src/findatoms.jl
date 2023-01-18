@@ -25,7 +25,8 @@ function find_atoms(
     use_adaptive::Bool = true,
     window_size::Integer = 8,
     bias::Real = 0.8,
-    min_atom_size::Integer = 10
+    min_atom_size::Integer = 10,
+    binarization_algorithm::Type{<:AbstractImageBinarizationAlgorithm} = Niblack
 )   
 
     if(threshold < 0.0 || threshold > 1.0) 
@@ -36,7 +37,7 @@ function find_atoms(
         optimum_thresh = (iszero(threshold) ? find_opt_thresh(image) : threshold)
         bw_opt = image .> optimum_thresh
     else
-        bw_opt = binarize(image, Niblack(bias=bias, window_size=window_size))
+        bw_opt = binarize(image, binarization_algorithm(bias=bias, window_size=window_size))
     end
 
     labels_opt = label_components(bw_opt)
@@ -97,33 +98,41 @@ end
     filter_image(
         image::Matrix{<:Gray{<:Real}}
         [,number_of_singular_vectors::Union{Integer, Symbol} = :auto,
-        kernel_size::Integer = 1]
+        kernel_size::Integer = 1,
+        gaussian_convolution_only::Bool = false]
     ) 
-    -> Matrix{<:Gray{<:AbstractFloat}
+    -> Matrix{<:Gray{<:AbstractFloat}}
 
 Filter the image using Singular Value Decomposition and Gaussian convolution.
 
 `number_of_singular_vectors` is the number of singular values to use. If set to :auto, 
 it will be determined automatically. `kernel_size` is the size of the gaussian kernel 
-that is used for the convolution. For low-resolution images, set `kernel_size = 1`.
+that is used for the convolution. For low-resolution images, set `kernel_size = 1`. 
+If the `gaussian_convolution_only` parameter is set to true, no SVD filtering is done
+and only a gaussian convolution is applied to the image. Possibly useful for images with
+no or little translational symmetry.
 """
 function filter_image(
     image::Matrix{<:Gray{<:Real}};
     number_of_singular_vectors::Union{Integer, Symbol} = :auto,
-    kernel_size::Integer = 1
+    kernel_size::Integer = 1,
+    gaussian_convolution_only::Bool = false
 )
-
-    svd_res = svd(image)
-    U, Σ, Vᵀ = svd_res.U, Diagonal(svd_res.S), svd_res.Vt
-    if number_of_singular_vectors == :auto
-        number_of_singular_vectors = sum(svd_res.S .> 2)
+    if !gaussian_convolution_only
+        svd_res = svd(image)
+        U, Σ, Vᵀ = svd_res.U, Diagonal(svd_res.S), svd_res.Vt
+        if number_of_singular_vectors == :auto
+            number_of_singular_vectors = sum(svd_res.S .> 2)
+        end
+        filt_im = Gray.(
+                        U[:,1:number_of_singular_vectors]*
+                        Σ[1:number_of_singular_vectors, 1:number_of_singular_vectors]*
+                        Vᵀ[1:number_of_singular_vectors,:]
+                        )
+        return (imfilter(filt_im, Kernel.gaussian(kernel_size)), svd_res.S)
+    else
+        return (imfilter(image, Kernel.gaussian(kernel_size)), nothing)
     end
-    filt_im = Gray.(
-                    U[:,1:number_of_singular_vectors]*
-                    Σ[1:number_of_singular_vectors, 1:number_of_singular_vectors]*
-                    Vᵀ[1:number_of_singular_vectors,:]
-                    )
-    (imfilter(filt_im, Kernel.gaussian(kernel_size)), svd_res.S)
 end
 
 """
