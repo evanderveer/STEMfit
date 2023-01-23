@@ -41,7 +41,7 @@ function find_unit_cells(
     cluster_radius::Real = 0.2,
     min_cluster_size::Integer = 50,
     uc_allowed_areas::UnitRange{<:Real} = 10:1000000,
-    uc_allowed_angles::UnitRange{<:Real} = 5:360,
+    uc_allowed_angles::UnitRange{<:Real} = 10:170,
     min_neighbor_dist::Real = 5,
     filter_tolerance::Real = 0.1
 )

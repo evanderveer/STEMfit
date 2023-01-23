@@ -236,7 +236,7 @@ function fit!(
     else
         println("Model not converged.")
     end
-    residual_changes
+    #residual_changes
 end
 
 function fit_all_gaussians!(

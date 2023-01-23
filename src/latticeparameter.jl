@@ -70,17 +70,22 @@ valid_lattice_parameter_filter(lattice_parameters) = (sum(lattice_parameters, di
 """
     plot_image_with_grid(
         image::Union{AbstractMatrix{<:Gray{<:AbstractFloat}}, AbstractMatrix{<:AbstractFloat}},
-        grid_spacing::Integer = 50
+        grid_spacing::Integer = 50;
+        plot_size=nothing
     ) 
 
-Plot `image` with a grid overlaid on top. `grid_spacing` defines the distance between grid lines.
+Plot `image` with a grid overlaid on top. `grid_spacing` defines the distance between grid lines. 
+`plot_size` determines the size of the displayed plot. If `plot_size=nothing`, the image is displayed
+at full size.
 """
 function plot_image_with_grid!(
-    image::Union{AbstractMatrix{<:Gray{<:AbstractFloat}}, AbstractMatrix{<:AbstractFloat}},
-    grid_spacing::Integer = 50
+    image::Union{AbstractMatrix{<:Gray{<:AbstractFloat}}, AbstractMatrix{<:AbstractFloat}};
+    grid_spacing::Integer = 50,
+    plot_size = nothing
 )
+    if plot_size===nothing; plot_size=size(image); end
     plot(   image, 
-            size=size(image), 
+            size=plot_size, 
             alpha=0.5, 
             xticks=grid_spacing*(0:floor(size(image)[2]/grid_spacing)), 
             yticks=grid_spacing*(0:floor(size(image)[1]/grid_spacing))
@@ -128,4 +133,18 @@ function get_strain_from_lattice_parameters(
         strain_matrix[:, i] = strain
     end
     strain_matrix
+end
+
+function layer_assignments(
+    atom_positions::AbstractMatrix{T}, 
+    layer_boundaries::AbstractVector
+    ) where T
+    layer_boundaries = [zero(T), T.(layer_boundaries)..., maximum(atom_positions[1, :])]
+    layer_filters = []
+    for boundary in eachindex(layer_boundaries[2:end])
+        push!(layer_filters, layer_boundaries[boundary] .<
+                             atom_positions[1, :] .<= 
+                             layer_boundaries[boundary+1]) 
+    end
+    sum(filter .* i for (i,filter) in enumerate(layer_filters), dims=2)
 end

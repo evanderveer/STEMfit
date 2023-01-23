@@ -89,6 +89,49 @@ function plot_unit_cells( #Very ugly --> refactor
 
 end
 
+function show_images(images...; rows=1, enlarge=1,  zoom=true, kwargs...) 
+    image_sizes = size.(images)
+    if !any(s1 != s2 for (s1,s2) in image_sizes) && zoom == true
+        image_sizes = [s[1] for s in image_sizes]
+        enlargement_factors = enlarge*maximum(image_sizes)./image_sizes
+        zoomed_images = [enlarge_image(im, ef) for (im,ef) in zip(images, enlargement_factors)]
+        return mosaicview(zoomed_images, nrow=rows; kwargs...)
+    end
+    mosaicview(enlarge_image.(images, enlarge), nrow=rows; kwargs...)
+end
+
+function plot_atoms_on_image(
+                            image, 
+                            atom_positions; 
+                            xlim=nothing, 
+                            ylim=nothing, 
+                            markersize=2, 
+                            markerstrokewidth=0, 
+                            c=:red, 
+                            legend=false,  
+                            xaxis=false, 
+                            yaxis=false, 
+                            plot_size=(600,600), 
+                            kwargs...)
+
+    if xlim===nothing; xlim=(1, size(image)[2]); end
+    if ylim===nothing; ylim=(1, size(image)[1]); end
+    p = plot(image, xlim=xlim, ylim=ylim);
+    scatter!(
+            p, 
+            atom_positions[2,:], 
+            atom_positions[1,:],
+            markersize=markersize, 
+            markerstrokewidth=markerstrokewidth, 
+            c=c, 
+            legend=legend,  
+            xaxis=xaxis, 
+            yaxis=yaxis, 
+            size=plot_size;
+            kwargs...)
+    p
+end
+
 """
     load_image(
         filename::String;

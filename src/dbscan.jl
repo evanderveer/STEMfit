@@ -109,8 +109,11 @@ function _dbscan(
                  adj_list::Vector{<:Integer};
                  min_neighbors::Integer = 1, 
                  min_cluster_size::Integer = 1
-                )    
+                )  
+    if "--cluster" in ARGS || "-c" in ARGS; cluster = true; else; cluster = false; end
     for i = 1:num_points
+        #Manually GC so it works on a cluster
+        if i % 5000 == 0 && cluster; GC.gc(); end
         visited[i] && continue
         push!(to_explore, i) # start a new cluster
         fill!(core_selection, false)
