@@ -22,8 +22,9 @@ module STEMfit
                     Niblack,
                     Sauvola,
                     binarize
-    import ImageBinarization.BinarizationAPI:
-                    AbstractImageBinarizationAlgorithm
+    import Clustering: 
+                    dbscan, 
+                    ClusteringResult
     import LinearAlgebra: 
                     svd, 
                     Diagonal,
