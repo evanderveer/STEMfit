@@ -22,9 +22,8 @@ module STEMfit
                     Niblack,
                     Sauvola,
                     binarize
-    import Clustering: 
-                    dbscan, 
-                    ClusteringResult
+    import ImageBinarization.BinarizationAPI:
+                    AbstractImageBinarizationAlgorithm
     import LinearAlgebra: 
                     svd, 
                     Diagonal,
@@ -57,6 +56,7 @@ module STEMfit
                     Shape,
                     hline!,
                     vline!
+    using Random
                     
     include("findatoms.jl")
     include("dbscan.jl")

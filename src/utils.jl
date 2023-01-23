@@ -275,8 +275,7 @@ end
 Makes a randomized validation image. Returns the image and list of atom locations.
 """
 function make_validation_image(;size, num_atoms, noise_level=0.2, jiggle_atoms=0.1, width_range=(0.005, 0.2), noise_function=randn)
-    model = ImageModel(size)
-
+    
     total_atoms = num_atoms[1]*num_atoms[2]
     centroids = Matrix{Float32}(undef, 2, 0)
     atom_pitch_y = size[1] / (num_atoms[1]+1)
@@ -300,9 +299,7 @@ function make_validation_image(;size, num_atoms, noise_level=0.2, jiggle_atoms=0
     widths = rand(total_atoms).*(width_range[2]-width_range[1]).+width_range[1]
     bs = zeros(total_atoms);
 
-    reset_lattices!(model)
-    add_lattice!(model, centroids', intensities, widths, bs, widths)
-    initialize!(model)
+    model = ImageModel(size, UnitCell((0.0,0.0,[[0,0],[0,0]])), KDTree(centroids), centroids, intensities, widths, bs, widths)
 
     noise = abs.(noise_function(size...) .* noise_level)
     out_img = Gray.(stretch_image(produce_image(model) .+ noise))

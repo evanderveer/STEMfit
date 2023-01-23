@@ -1,9 +1,9 @@
 struct UnitCell
     volume::Real
     angle::Real
-    vector_1::Vector{<:AbstractFloat}
-    vector_2::Vector{<:AbstractFloat}
-    UnitCell((volume, angle, vectors)) = new(volume, angle, Float32.(vectors[1]), Float32.(vectors[2]))
+    vector_1::Vector{<:Real}
+    vector_2::Vector{<:Real}
+    UnitCell((volume, angle, vectors)) = new(volume, angle, Float64.(vectors[1]), Float64.(vectors[2]))
 end
 
 """
