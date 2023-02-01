@@ -1,6 +1,6 @@
 """
     find_atoms(
-        image::Matrix{<:Gray{<:AbstractFloat}}
+        image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
         [,threshold::Real = 0.0,
         use_adaptive::Bool = true,
         window_size::Integer = 8,
@@ -20,7 +20,7 @@ Returns a 2 x n matrix of atom centroids, a size n vector of atom widths,
 a size n vector of atom intensities and the binarized image. 
 """
 function find_atoms(
-    image::Matrix{<:Gray{<:Real}};
+    image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}};
     threshold::Real = 0.0,
     use_adaptive::Bool = true,
     window_size::Integer = 8,
@@ -34,7 +34,7 @@ function find_atoms(
     end   
 
     if !use_adaptive
-        optimum_thresh = (iszero(threshold) ? find_opt_thresh(image) : threshold)
+        optimum_thresh = (iszero(threshold) ? find_optimum_threshold(image) : threshold)
         bw_opt = image .> optimum_thresh
     else
         bw_opt = binarize(image, binarization_algorithm(bias=bias, window_size=window_size))
@@ -63,7 +63,7 @@ function find_atoms(
 end
 
 """
-    find_opt_thresh(image::Matrix{Gray{<:AbstractFloat}}) -> Float32
+    find_optimum_threshold(image::Matrix{Gray{<:AbstractFloat}}) -> Float32
 
 Finds the optimum global threshold value for detecting atoms in `image`. 
 
@@ -74,16 +74,16 @@ in the image is maximized.
 ```
     julia> image = rand(Float32, 100, 100)
     100x100 Matrix{Float32}
-    julia> threshold = find_opt_thresh(image)
+    julia> threshold = find_optimum_threshold(image)
     0.27
 ```
 """
-function find_opt_thresh(
-    image::Matrix{<:Gray{<:Real}}
+function find_optimum_threshold(
+    image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
 )
 
     lab_max  = Matrix(undef, 91,2)
-    for (idx,i) in enumerate(0.05:0.01:0.95) #TODO: Parallelize
+    Threads.@threads for (idx,i) in collect(enumerate(0.05:0.01:0.95)) 
         bw = image .> i;
         labels = label_components(bw)
         lab_max[idx, :] = [i maximum(labels)]
@@ -96,7 +96,7 @@ end
 
 """
     filter_image(
-        image::Matrix{<:Gray{<:Real}}
+        image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
         [,number_of_singular_vectors::Union{Integer, Symbol} = :auto,
         kernel_size::Integer = 1,
         gaussian_convolution_only::Bool = false]
@@ -113,7 +113,7 @@ and only a gaussian convolution is applied to the image. Possibly useful for ima
 no or little translational symmetry.
 """
 function filter_image(
-    image::Matrix{<:Gray{<:Real}};
+    image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}};
     number_of_singular_vectors::Union{Integer, Symbol} = :auto,
     kernel_size::Integer = 1,
     gaussian_convolution_only::Bool = false
@@ -137,7 +137,7 @@ end
 
 """
     get_component_convex_hulls(
-        binarized_image::Matrix{<:Gray{<:Real}}
+        binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
     ) 
     -> Vector{Vector{CartesianIndex{2}}}
 
@@ -147,7 +147,7 @@ If the convex hull of a component cannot be calculated, a vector containing only
 CartesianIndex{0,0} is returned. 
 """
 function get_component_convex_hulls(
-    binarized_image::Matrix{<:Gray{<:Real}}
+    binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
 )
     labeled_image = label_components(binarized_image)
     comp_boxes = component_boxes(labeled_image)
@@ -161,7 +161,7 @@ end
 """
     get_conv_hull(
         box::Vector{Tuple{Int64, Int64}}, 
-        binarized_image::Matrix{<:Gray{<:Real}}
+        binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
     ) 
     -> Vector{CartesianIndex{2}}
 
@@ -172,7 +172,7 @@ CartesianIndex{0,0} is returned.
 """
 function get_conv_hull(
     box::Vector{Tuple{Int64, Int64}}, 
-    binarized_image::Matrix{<:Gray{<:Real}}
+    binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
 )
     ymin = clamp(box[1][1]-1, 1, size(binarized_image)[1])
     ymax = clamp(box[2][1]+1, 1, size(binarized_image)[1])
@@ -205,4 +205,111 @@ function cartesian_indices_to_matrix(
         matrix[:, i] .= Tuple(vertex)
     end
     return(matrix .+ shift)
+end
+
+
+"""
+    function find_optimal_threshold_parameters(
+        image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}; 
+        min_atom_size::Integer = 5,
+        max_iterations::Integer = 10)
+        -> Tuple{Float64, Int64}
+
+    Uses a heuristic iterative approach to find reasonable values for the bias and 
+    window size for Niblack image thresholding given an `image` and minimum number 
+    of pixels per atom `min_atom_size`. Returns the best guess for the bias and 
+    window size as a tuple.
+
+    The maximum number of iterations can be set using the keyword argument 
+    `max_iterations`.
+
+    This function does not run very fast, but it allows for automatic thresholding
+    without prior knowledge about the image.
+"""
+function find_optimal_threshold_parameters(
+                    image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}; 
+                    min_atom_size::Integer = 5,
+                    max_iterations::Integer = 10
+                                            )
+    change_b = change_w = iterations = 0
+    b = 1.0
+    w = 1
+
+    while (change_b < 0.2 || change_w != 0) && iterations < max_iterations
+        new_w = try
+            guess_w(image, b, min_atom_size)::Int64
+        catch
+            w
+        end            
+        
+        change_w = w - new_w
+        w = new_w
+
+        new_b = try
+            guess_b(image, new_w, min_atom_size)::Float64
+        catch
+            b
+        end
+        change_b = b - new_b
+        b = new_b
+        iterations += 1
+    end
+    (b,w)
+end
+
+
+"""
+    guess_b(
+        image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
+        w::Integer, 
+        min_atom_size::Integer
+    )
+
+    Use a heuristic approach to find the best guess for the bias given an 
+    image, window size `w` and minimum number of pixels per atom `min_atom_size`.
+"""
+function guess_b(
+                image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
+                w::Integer, 
+                min_atom_size::Integer
+                )
+    res = Matrix{Float64}(undef, 2, 40)
+    Threads.@threads for (i,b) in collect(enumerate(LinRange(-5,5,40)))
+        num_atoms = length(STEMfit.find_atoms(image, 
+                                              bias=b, 
+                                              window_size=w, 
+                                              min_atom_size=min_atom_size)[2])::Int64
+        res[:,i] .= (b, num_atoms)
+    end
+    num_atoms_thresh = 0.01*maximum(res[2,:])
+    sum_weights = sum(res[2, res[2,:] .> num_atoms_thresh])
+    sum(prod(col) for col in eachcol(res) if col[2] > num_atoms_thresh)/sum_weights
+end
+
+"""
+    guess_b(
+        image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
+        w::Integer, 
+        min_atom_size::Integer
+    )
+
+    Use a heuristic approach to find the best guess for the window size given an 
+    image, bias `b` and minimum number of pixels per atom `min_atom_size`.
+"""
+function guess_w(
+                image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}, 
+                b::AbstractFloat, 
+                min_atom_size::Integer
+                )
+    res = Matrix{Float64}(undef, 2, 40)
+    Threads.@threads for (i,w) in collect(enumerate(LinRange(0, size(image)[1]/10, 40)))
+        num_atoms = length(STEMfit.find_atoms(image, 
+                                              bias=b, 
+                                              window_size=round(Int64,w), 
+                                              min_atom_size=min_atom_size)[2])::Int64
+        res[:,i] .= (w, num_atoms)
+    end
+    num_atoms_thresh = 0.9*maximum(res[2,:])
+    sum_weights = sum(res[2, res[2,:] .> num_atoms_thresh])
+    round(Int64, sum(prod(col) for col in eachcol(res) if col[2] > num_atoms_thresh)/sum_weights)
 end
