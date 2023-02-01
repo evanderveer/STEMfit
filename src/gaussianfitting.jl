@@ -59,7 +59,7 @@ end
 
 function construct_parameter_set(
     image_model::ImageModel{T},
-    image::AbstractMatrix{<:Gray{<:Real}}
+    image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
 ) where T
     window_size = model_unit_cell_to_window_size(image_model)
 
@@ -178,26 +178,16 @@ function loss_function(
     p.image_model.gaussians[p.gaussian_number] = 
         convert_optimization_parameters_to_gaussian(u)
     submodel = produce_image(p.image_model, p.range..., p.neighbor_indices)
-
+    
     T(residual(submodel, p.subimage))
 end
 
-function loss_function(
-    u::AbstractVector{T},
-    p::GaussianParameters
-) where {T}
-    p.image_model.gaussians[p.gaussian_number] = 
-        convert_optimization_parameters_to_gaussian(u)
-    submodel = produce_image(p.image_model, p.range..., p.neighbor_indices)
-
-    T(residual(submodel, p.subimage))
-end
 
 function fit!(
-    image::AbstractMatrix{<:Gray{<:Real}},
+    image::Union{AbstractMatrix{<:Gray{<:Real}},AbstractMatrix{<:Real}},
     image_model::STEMfit.ImageModel;
     tolerance::Real = 0.01,
-    max_iterations::Integer = 3
+    max_iterations::Integer = 10
 )
     residual_changes = Dict([(p, [Inf, 0]) for p in (:y0,:x0,:A,:a,:b,:c)])
     parameter_set = STEMfit.construct_parameter_set(image_model, image)
@@ -250,7 +240,34 @@ function fit_all_gaussians!(
     end
 end
 
-residual(im1, im2) = Float64(sum((im1 .- im2) .^ 2))
+function fit_optim!(image, image_model, n; tolerance = 0.001)
+    parameter_set = STEMfit.construct_parameter_set(image_model, image)
+    gaussian_parameters = [STEMfit.GaussianParameters(parameter_set, i) 
+                                for i in 1:length(image_model.gaussians)]
+    initial_parameters = [STEMfit.optimization_parameters(gaussian) 
+                                for gaussian in image_model.gaussians];
+    optf = OptimizationFunction(STEMfit.loss_function, Optimization.AutoForwardDiff())
+
+    fit_gaussians(initial_parameters, gaussian_parameters, optf, n, tolerance)
+end
+
+function fit_gaussians(us, ps, optf, n, x_tol)
+
+    Threads.@threads for i in 1:n
+        prob = OptimizationProblem(optf, us[i], ps[i])
+        try
+            solve(prob, BFGS(), x_tol=x_tol)
+        catch
+            solve(prob, BFGS(), x_tol=x_tol)
+        end
+    end
+end
+
+residual(im1::AbstractMatrix{<:Real}, im2::AbstractMatrix{<:Real}) = sum((im1 .- im2) .^ 2)
+residual(im1::AbstractMatrix{<:Gray{T}}, im2::AbstractMatrix{<:Real}) where {T<:Real} = sum((T.(im1) .- im2) .^ 2)
+residual(im1::AbstractMatrix{<:Real}, im2::AbstractMatrix{<:Gray{T}}) where {T<:Real} = sum((im1 .- T.(im2)) .^ 2)
+residual(im1::AbstractMatrix{<:Gray{T}}, im2::AbstractMatrix{<:Gray{V}}) where {T<:Real, V<:Real} = sum((T.(im1) .- V.(im2)) .^ 2)
+
 
 model_unit_cell_to_window_size(model::ImageModel) = 0.75* maximum([norm(model.unit_cell.vector_1), 
                                                                    norm(model.unit_cell.vector_2)])

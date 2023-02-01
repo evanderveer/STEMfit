@@ -56,8 +56,17 @@ module STEMfit
                     Shape,
                     hline!,
                     vline!
-    using Random
-                    
+    using Optimization
+    using ForwardDiff
+    import ForwardDiff:
+                    Dual #Import explicitly so it can be extended
+    import OptimizationOptimJL:
+                    Newton,
+                    BFGS,
+                    LBFGS
+    import Base:
+                    Float64
+
     include("findatoms.jl")
     include("dbscan.jl")
     include("finduc.jl")

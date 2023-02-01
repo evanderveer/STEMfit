@@ -359,3 +359,9 @@ function print_range(
         println(string(i)*'\t'*string(j)*'\r')
     end 
 end
+
+#Make sure matrices of dual numbers can be displayed as images
+Gray(dual::Dual) = Gray(dual.value)
+Float64(dual::Dual) = Float64(dual.value)
+Dual(pixel::Gray{T}) where T = Dual(T(pixel))
+#ForwardDiff.Dual(pixel::Gray{T}) where T = Dual(T(pixel))
