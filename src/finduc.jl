@@ -3,7 +3,7 @@ struct UnitCell
     angle::Real
     vector_1::Vector{<:AbstractFloat}
     vector_2::Vector{<:AbstractFloat}
-    UnitCell((volume, angle, vectors)) = new(volume, angle, Float32.(vectors[1]), Float32.(vectors[2]))
+    UnitCell((volume, angle, vectors)) = new(volume, angle, vectors[1], vectors[2])
 end
 
 """
@@ -120,15 +120,13 @@ function find_neighbor_clusters(
     min_neighbor_dist::Real = 5
 )   where {T<:AbstractFloat}
 
-    #TODO: Find a more memory efficient clustering algorithm
     clusters = dbscan(neighbors, radius, min_cluster_size=min_cluster_size)
 
     #The cluster center is the average of all neighbors belonging to the cluster
     cluster_centers = Matrix{T}(undef, 2, 0)
     for cluster in clusters
         if length(cluster.core_indices) != 0
-            #Cast to Float64 so the sum does not exceed Float32 max value
-            mean_vector = mean(Float64.(neighbors[:, cluster.core_indices]), dims=2)
+            mean_vector = mean((neighbors[:, cluster.core_indices]), dims=2)
             cluster_centers = [cluster_centers T.(mean_vector)]
         end
     end

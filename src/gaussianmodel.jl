@@ -16,6 +16,13 @@ end
 Returns the parameters of the Gaussian *model*.
 """
 function get_parameters(
+    model::Gaussian{<:Dual}
+)
+    (;y0, x0, A, a, b, c) = model
+    getfield.([y0, x0, A, a, b, c], :value)
+end
+
+function get_parameters(
     model::Gaussian{T}
 ) where T
     (;y0, x0, A, a, b, c) = model
@@ -37,7 +44,7 @@ end
 Returns the intensity of the Gaussian *model* at the point (*x*, *y*).
 """
 function intensity(
-    model::Gaussian{<:Real},
+    model::Gaussian,
     x::Real,
     y::Real
     )
@@ -56,11 +63,11 @@ end
 Returns the summed intensity of the vector of Gaussians *model* at the point (*x*, *y*).
 """
 function intensity(
-    model::AbstractVector{<:Gaussian{T}},
+    model::AbstractVector{<:Gaussian},
     x::Real,
     y::Real
-    ) where {T<:Real}
-    sum(intensity(g, x, y) for g in model)::T
+    ) 
+    sum(intensity(g, x, y) for g in model)
 end
 
 """

@@ -58,6 +58,23 @@ module STEMfit
                     Shape,
                     hline!,
                     vline!
+    using Optimization
+    #import Optimization:
+    #                OptimizationFunction,
+    #                OptimizationProblem,
+    #                AutoForwardDiff,
+    #                solve
+    using ForwardDiff
+    import ForwardDiff:
+                    Dual #Import explicitly so it can be extended
+
+    import OptimizationOptimJL:
+                    Newton,
+                    BFGS,
+                    LBFGS
+    import Base:
+                    Float64
+
                     
     include("findatoms.jl")
     include("finduc.jl")

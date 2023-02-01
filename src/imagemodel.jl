@@ -5,7 +5,7 @@ mutable struct ImageModel{T<:Real}
     init_a::AbstractVector{T}
     init_b::AbstractVector{T}
     init_c::AbstractVector{T}
-    gaussians::Vector{Gaussian{T}}
+    gaussians::Vector{Gaussian}
     unit_cell::UnitCell
     atom_tree::NNTree
     background::Matrix{T} 
@@ -79,7 +79,8 @@ function make_gaussians(
     init_c::AbstractVector{T}
     ) where {T<:Real}
 
-    gaussians= Vector{Gaussian{T}}([])
+    V = Float64#Dual{T,T,6} 
+    gaussians = Vector{Gaussian{V}}([])
     for (pos, A, a, b, c) in zip(
         eachcol(init_pos_list),
         init_A,
@@ -87,7 +88,7 @@ function make_gaussians(
         init_b,
         init_c
     )
-        new_gaussian = Gaussian(T.(pos)..., T(A), T(a), T(b), T(c)) 
+        new_gaussian = Gaussian{V}(pos..., A, a, b, c) 
         push!(gaussians, new_gaussian)
     end
     gaussians
@@ -133,6 +134,7 @@ function intensity(
         intens += intensity(model.gaussians[i], x, y)
     end
     intens"""
+    
     model.background[round.(Int64,(y,x))...] + 
         intensity(model.gaussians[gaussian_indices], x, y)
 end
@@ -159,7 +161,8 @@ function produce_image(
     num_gaussians::Integer = 10
     ) where {T<:Real}
     
-    image = Matrix{T}(undef, length(yrange), length(xrange))
+    V = Real
+    image = Matrix{V}(undef, length(yrange), length(xrange))
 
     fill_image!(image, model, xrange, yrange, tree, num_gaussians)
     image
@@ -172,10 +175,11 @@ function produce_image(
     num_gaussians::Integer = 10
     ) where {T<:Real}
 
+    V = Real
     # If no NNTree is passed, construct one
     tree = KDTree(model.init_pos_list)
     
-    image = Matrix{T}(undef, length(yrange), length(xrange))
+    image = Matrix{V}(undef, length(yrange), length(xrange))
 
     fill_image!(image, model, xrange, yrange, tree, num_gaussians)
     image
@@ -187,10 +191,11 @@ function produce_image(
     num_gaussians::Integer = 10
     ) where {T<:Real}
 
+    V = Real
     xrange = (1:model.model_size[2])
     yrange = (1:model.model_size[1])
 
-    image = Matrix{T}(undef, length(yrange), length(xrange))
+    image = Matrix{V}(undef, length(yrange), length(xrange))
 
     fill_image!(image, model, xrange, yrange, tree, num_gaussians)
     image
@@ -201,13 +206,14 @@ function produce_image(
     num_gaussians::Integer = 10
     ) where {T<:Real}
 
+    V = Real
     # If no NNTree is passed, construct one
     tree = KDTree(model.init_pos_list)
 
     xrange = (1:model.model_size[2])
     yrange = (1:model.model_size[1])
 
-    image = Matrix{T}(undef, length(yrange), length(xrange))
+    image = Matrix{V}(undef, length(yrange), length(xrange))
 
     fill_image!(image, model, xrange, yrange, tree, num_gaussians)
     image
@@ -218,10 +224,11 @@ function produce_image(
     gaussian_indices::AbstractVector{<:Integer}
     ) where {T<:Real}
 
+    V = Real
     xrange = (1:model.model_size[2])
     yrange = (1:model.model_size[1])
 
-    image = Matrix{T}(undef, length(yrange), length(xrange))
+    image = Matrix{V}(undef, length(yrange), length(xrange))
 
     fill_image!(image, model, xrange, yrange, gaussian_indices)
     image
@@ -234,7 +241,8 @@ function produce_image(
     gaussian_indices::AbstractVector{<:Integer}
     ) where {T<:Real}
 
-    image = Matrix{T}(undef, length(yrange), length(xrange))
+    V = Real
+    image = Matrix{V}(undef, length(yrange), length(xrange))
 
     fill_image!(image, model, xrange, yrange, gaussian_indices)
     image
@@ -253,29 +261,29 @@ end
 Fills a matrix *image* with intensity values of *model*.
 """
 function fill_image!(
-    image::Matrix{<:AbstractFloat},
+    image::Matrix{<:Real},
     model::ImageModel,    
     xrange::UnitRange{Int64},
     yrange::UnitRange{Int64},
     tree::NNTree,
     num_gaussians::Int64
 )
-    Threads.@threads for (column, ypos) in collect(enumerate(yrange))
-        Threads.@threads for (row, xpos) in collect(enumerate(xrange))
+     for (column, ypos) in collect(enumerate(yrange))
+         for (row, xpos) in collect(enumerate(xrange))
             image[column, row] = intensity(model, xpos, ypos, tree, num_gaussians)
         end
     end
 end
 
 function fill_image!(
-    image::Matrix{<:AbstractFloat},
+    image::Matrix{<:Real},
     model::ImageModel,    
     xrange::UnitRange{Int64},
     yrange::UnitRange{Int64},
     gaussian_indices::AbstractVector{<:Integer}
 )
-    Threads.@threads for (column, ypos) in collect(enumerate(yrange))
-        Threads.@threads for (row, xpos) in collect(enumerate(xrange))
+     for (column, ypos) in collect(enumerate(yrange))
+         for (row, xpos) in collect(enumerate(xrange))
             image[column, row] = intensity(model, xpos, ypos, gaussian_indices)
         end
     end
