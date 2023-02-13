@@ -65,7 +65,9 @@ function calculate_lattice_parameters(#TODO: Clean up
     abs.([vec_1 vec_2] * latt_param_matrix)
 end
 
-valid_lattice_parameter_filter(lattice_parameters) = (sum(lattice_parameters, dims=1) .!= 0)[1,:]
+function valid_lattice_parameter_filter(lattice_parameters) 
+    (sum(lattice_parameters, dims=1) .!= 0)[1,:]
+end
 
 """
     plot_image_with_grid(
