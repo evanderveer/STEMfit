@@ -177,7 +177,7 @@ function produce_image(
 
     V = Real
     # If no NNTree is passed, construct one
-    tree = KDTree(model.init_pos_list)
+    tree = model.atom_tree
     
     image = Matrix{V}(undef, length(yrange), length(xrange))
 
@@ -208,7 +208,7 @@ function produce_image(
 
     V = Real
     # If no NNTree is passed, construct one
-    tree = KDTree(model.init_pos_list)
+    tree = model.atom_tree
 
     xrange = (1:model.model_size[2])
     yrange = (1:model.model_size[1])
@@ -268,7 +268,7 @@ function fill_image!(
     tree::NNTree,
     num_gaussians::Int64
 )
-     for (column, ypos) in collect(enumerate(yrange))
+    Threads.@threads for (column, ypos) in collect(enumerate(yrange))
          for (row, xpos) in collect(enumerate(xrange))
             image[column, row] = intensity(model, xpos, ypos, tree, num_gaussians)
         end
@@ -282,7 +282,7 @@ function fill_image!(
     yrange::UnitRange{Int64},
     gaussian_indices::AbstractVector{<:Integer}
 )
-     for (column, ypos) in collect(enumerate(yrange))
+    Threads.@threads for (column, ypos) in collect(enumerate(yrange))
          for (row, xpos) in collect(enumerate(xrange))
             image[column, row] = intensity(model, xpos, ypos, gaussian_indices)
         end
@@ -329,4 +329,33 @@ function get_initial_gaussian_parameters(
     σ::AbstractVector{T}
 ) where {T<:Real}
     get_initial_gaussian_parameters(σ, σ, zeros(T, length(σ)))
+end
+
+function check_model(
+    image_model;
+    fix=true
+)
+    check_function(g) = check_gaussian(g, 
+                        1:image_model.model_size[2], 
+                        1:image_model.model_size[1]
+                        )
+    faulty_gaussians = sum(check_function.(image_model.gaussians))
+    println(string(faulty_gaussians) * " Gaussian functions were found to have problems.")
+    if fix
+        filter!(g -> !check_function(g), image_model.gaussians)
+        new_positions = hcat([Float64.([g.y0, g.x0]) for g in image_model.gaussians]...)
+
+        image_model.atom_tree = KDTree(new_positions)
+    end
+end
+
+function check_gaussian(
+    gaussian::Gaussian,
+    valid_range_x = -Inf:Inf,
+    valid_range_y = -Inf:Inf
+)
+    0 < gaussian.A < 1 &&
+    isposdef([gaussian.a gaussian.b;gaussian.b gaussian.c]) &&
+    gaussian.x0 in valid_range_x &&
+    gaussian.y0 in valid_range_y
 end

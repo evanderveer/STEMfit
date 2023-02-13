@@ -62,7 +62,7 @@ function calculate_lattice_parameters(#TODO: Clean up
         end
     end
     #Transform back
-    abs.([vec_1 vec_2] * latt_param_matrix)
+    abs.(norm.([vec_1, vec_2]) .* latt_param_matrix)
 end
 
 function valid_lattice_parameter_filter(lattice_parameters) 

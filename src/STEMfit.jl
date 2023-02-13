@@ -32,12 +32,15 @@ module STEMfit
                     dot, 
                     norm,
                     cholesky,
-                    Hermitian
+                    Hermitian,
+                    isposdef
     import Combinatorics:
                     combinations,
                     sortperm
     import Statistics:
                     mean
+    import StatsBase:
+                    sample
     import Distances: 
                     Euclidean, 
                     PeriodicEuclidean, 
@@ -65,7 +68,8 @@ module STEMfit
                     BFGS,
                     LBFGS
     import Base:
-                    Float64
+                    Float64,
+                    Float16
 
     include("findatoms.jl")
     include("dbscan.jl")

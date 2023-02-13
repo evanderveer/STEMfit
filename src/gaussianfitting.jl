@@ -186,7 +186,7 @@ end
 function fit!(
     image::Union{AbstractMatrix{<:Gray{<:Real}},AbstractMatrix{<:Real}},
     image_model::STEMfit.ImageModel;
-    tolerance::Real = 0.01,
+    tolerance::Real = 0.001,
     max_iterations::Integer = 10
 )
     residual_changes = Dict([(p, [Inf, 0]) for p in (:y0,:x0,:A,:a,:b,:c)])
@@ -235,30 +235,45 @@ function fit_all_gaussians!(
     parameter_to_fit::Symbol,
     step_size 
 ) 
-    for (u,p) in zip(initial_parameters, gaussian_parameters)
+    Threads.@threads for (u,p) in collect(zip(initial_parameters, gaussian_parameters))
         STEMfit.fit_linear(u, p, parameter_to_fit, step_size=step_size)
     end
 end
 
-function fit_optim!(image, image_model, n; tolerance = 0.001)
-    parameter_set = STEMfit.construct_parameter_set(image_model, image)
-    gaussian_parameters = [STEMfit.GaussianParameters(parameter_set, i) 
+function fit_optim!(image_model, image; tolerance = 0.001, n = nothing, multithreaded=true, method=BFGS())
+    parameter_set = construct_parameter_set(image_model, image)
+    gaussian_parameters = [GaussianParameters(parameter_set, i) 
                                 for i in 1:length(image_model.gaussians)]
-    initial_parameters = [STEMfit.optimization_parameters(gaussian) 
+    initial_parameters = [optimization_parameters(gaussian) 
                                 for gaussian in image_model.gaussians];
-    optf = OptimizationFunction(STEMfit.loss_function, Optimization.AutoForwardDiff())
+    optf = OptimizationFunction(loss_function, Optimization.AutoForwardDiff())
+    if n === nothing; n = length(image_model.gaussians); end 
+    println("Fitting " * string(n) * " Gaussian functions")
 
-    fit_gaussians(initial_parameters, gaussian_parameters, optf, n, tolerance)
+    if multithreaded; fit_gaussians(initial_parameters, gaussian_parameters, optf, n, tolerance, method)
+    else; fit_gaussians_st(initial_parameters, gaussian_parameters, optf, n, tolerance, method); end
 end
 
-function fit_gaussians(us, ps, optf, n, x_tol)
+function fit_gaussians(us, ps, optf, n, x_tol, method)
 
     Threads.@threads for i in 1:n
         prob = OptimizationProblem(optf, us[i], ps[i])
         try
-            solve(prob, BFGS(), x_tol=x_tol)
+            solve(prob, method, x_tol=x_tol)
+        catch 
+            solve(prob, method, x_tol=x_tol)
+        end
+    end
+end
+
+function fit_gaussians_st(us, ps, optf, n, x_tol, method)
+
+    for i in 1:n
+        prob = OptimizationProblem(optf, us[i], ps[i])
+        try
+            solve(prob, method, x_tol=x_tol)
         catch
-            solve(prob, BFGS(), x_tol=x_tol)
+            solve(prob, method, x_tol=x_tol)
         end
     end
 end

@@ -23,7 +23,9 @@ Find unit cells from nearest neighbors.
 
 Calculates `num_nn` nearest neighbors for each centroid in `centroids`, then clusters these
 using a DBSCAN clustering algorithm. The potential unit cells are filtered using the 
-`uc_allowed_angles` and `uc_allowed_areas` parameters. 
+`uc_allowed_angles` and `uc_allowed_areas` parameters. By default, a subset of 1000 atomic 
+positions are chosen at random to find the unit cells. To use all atoms, set `use_all_atoms`
+to `true`. This may incur very long compute times.
 
 # Arguments
 - `centroids::Matrix{<:Real}`: Matrix of centroids to find a unit cell of
@@ -34,6 +36,7 @@ using a DBSCAN clustering algorithm. The potential unit cells are filtered using
 - `uc_allowed_angles::Tuple{Real, Real} = (85, 95)`: Range of allowed unit cell uc_angles
 - `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
 - `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
+- `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
 """
 function find_unit_cells(
     centroids::Matrix{<:Real};
@@ -43,11 +46,14 @@ function find_unit_cells(
     uc_allowed_areas::UnitRange{<:Real} = 10:1000000,
     uc_allowed_angles::UnitRange{<:Real} = 5:360,
     min_neighbor_dist::Union{<:Real, Symbol} = :auto,
-    filter_tolerance::Real = 0.1
+    filter_tolerance::Real = 0.1,
+    use_all_atoms::Bool = false
 )
 
     #Find nearest neighbors for all atoms in centroids
-    (neighbors_full, atom_tree, distance_measure) = find_neighbors(centroids, num_nn)
+    (neighbors_full, atom_tree, distance_measure, mcs) = find_neighbors(centroids, 
+                                                                        num_nn, 
+                                                                        use_all_atoms)
 
     if cluster_radius == :auto
         cluster_radius = distance_measure/100
@@ -56,7 +62,7 @@ function find_unit_cells(
         min_neighbor_dist = distance_measure/2.5
     end
     if min_cluster_size == :auto
-        min_cluster_size = round(Int64,size(centroids)[2]/70)
+        min_cluster_size = mcs
     end
 
     #Find neighbors using DBSCAN
@@ -69,11 +75,11 @@ function find_unit_cells(
 
     #Find potential unit cells from the nearest neighbor positions
     sorted_uc = unit_cells_from_nn(
-                                    neighbors, 
-                                    uc_allowed_angles=uc_allowed_angles, 
-                                    uc_allowed_areas=uc_allowed_areas,
-                                    tolerance=filter_tolerance
-                                    )
+                                neighbors, 
+                                uc_allowed_angles=uc_allowed_angles, 
+                                uc_allowed_areas=uc_allowed_areas,
+                                tolerance=filter_tolerance
+                                )
 
     return (sorted_uc, neighbors, atom_tree)
 end
@@ -89,23 +95,38 @@ The relative positions are rounded to the nearest integer.
 """
 function find_neighbors(
     centroids::AbstractMatrix{T},
-    num_neighbors::Integer = 40
+    num_neighbors::Integer = 40,
+    use_all_atoms::Bool = false
 ) where {T<:AbstractFloat}
+
+
+    if use_all_atoms || size(centroids)[2] < 5000
+        selected_centroid_idxs = sample(axes(centroids,2), 
+                                        size(centroids)[2], 
+                                        replace=false)
+    else 
+        selected_centroid_idxs = sample(axes(centroids,2), 
+                                        5000, 
+                                        replace=false)
+    end
+
+    selected_centroids = centroids[:, selected_centroid_idxs]
 
     atom_tree = KDTree(centroids)
 
-    vectors = Matrix{T}(undef, 2, num_neighbors*size(centroids)[2])
+    vectors = Matrix{T}(undef, 2, num_neighbors*size(selected_centroids)[2])
 
     #Find num_neighbors nearest neighbors for each atom
-    idxs::Vector{Vector{Int32}}, distances = knn(atom_tree, centroids, num_neighbors)
+    idxs::Vector{Vector{Int32}}, distances = knn(atom_tree, selected_centroids, num_neighbors)
 
-    for (i, (neighbors, atom)) in enumerate(zip(idxs, eachcol(centroids)))
-        difference_vectors = Float32.(centroids[:, neighbors] .- atom)
+    for (i, (neighbors, atom)) in enumerate(zip(idxs, eachcol(selected_centroids)))
+        difference_vectors = centroids[:, neighbors] .- atom
         vectors[:, (i-1) * num_neighbors + 1:i * num_neighbors] = difference_vectors
     end
 
     distance_measure = mean(vcat(distances...))/num_neighbors^0.5
-    return (vectors, atom_tree, distance_measure)
+    min_cluster_size = round(Int64, size(selected_centroids)[2]/70)
+    return (vectors, atom_tree, distance_measure, min_cluster_size)
 end
 
 """

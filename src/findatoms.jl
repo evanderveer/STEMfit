@@ -122,7 +122,11 @@ function filter_image(
         svd_res = svd(image)
         U, Σ, Vᵀ = svd_res.U, Diagonal(svd_res.S), svd_res.Vt
         if number_of_singular_vectors == :auto
-            number_of_singular_vectors = sum(svd_res.S .> 2)
+            log_Σ = log.(svd_res.S[1:100])
+            A = [collect(1:100) ones(100)]
+            sv_dist = log_Σ .- A*inv(A'*A)*A'*log_Σ
+            number_of_singular_vectors = 
+                round.(Int64, collect(1:100)[sv_dist .== minimum(sv_dist)]*1.2)[1]
         end
         filt_im = Gray.(
                         U[:,1:number_of_singular_vectors]*
