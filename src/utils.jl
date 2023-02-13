@@ -89,7 +89,7 @@ function plot_unit_cells( #Very ugly --> refactor
 
 end
 
-function show_images(images...; rows=1, enlarge=1,  zoom=true, kwargs...) 
+function show_images(images...; rows=1, enlarge=1, zoom=true, kwargs...) 
     image_sizes = size.(images)
     if !any(s1 != s2 for (s1,s2) in image_sizes) && zoom == true
         image_sizes = [s[1] for s in image_sizes]
@@ -171,7 +171,7 @@ function uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
 end
 
 """Calculate the angle (0-360deg) of a vector wrt the vector [1,0]."""
-function uc_angle(basis_vector::Vector{<:Real})
+function uc_angle(basis_vector::AbstractVector{<:Real})
     (y,x) = Float32.(basis_vector)
     if x == 0f0 || y == 0f0
         return 0f0
@@ -271,76 +271,6 @@ function save_atomic_positions!(
     close(f)
 end
 
-"""
-Makes a randomized validation image. Returns the image and list of atom locations.
-"""
-function make_validation_image(;size, num_atoms, noise_level=0.2, jiggle_atoms=0.1, width_range=(0.005, 0.2), noise_function=randn)
-    
-    total_atoms = num_atoms[1]*num_atoms[2]
-    centroids = Matrix{Float32}(undef, 2, 0)
-    atom_pitch_y = size[1] / (num_atoms[1]+1)
-    atom_pitch_x = size[2] / (num_atoms[2]+1)
-
-
-    jiggle_y = rand(total_atoms).*jiggle_atoms.*atom_pitch_y
-    jiggle_x = rand(total_atoms).*jiggle_atoms.*atom_pitch_x
-    jiggle_matrix = hcat(jiggle_y, jiggle_x)'
-
-    
-    for i in 1:total_atoms
-        col_number = floor((i-1)/num_atoms[1]+1)
-        row_number = ((i-1)-(col_number-1)*num_atoms[1]+1)
-        atom_y = row_number * atom_pitch_y
-        atom_x = col_number * atom_pitch_x
-        centroids = [centroids Float32.([atom_y, atom_x])]
-    end
-    centroids = centroids .+ jiggle_matrix
-    intensities = rand(total_atoms)./2 .+0.5
-    widths = rand(total_atoms).*(width_range[2]-width_range[1]).+width_range[1]
-    bs = zeros(total_atoms);
-
-    model = ImageModel(size, UnitCell((0.0,0.0,[[0,0],[0,0]])), KDTree(centroids), centroids, intensities, widths, bs, widths)
-
-    noise = abs.(noise_function(size...) .* noise_level)
-    out_img = Gray.(stretch_image(produce_image(model) .+ noise))
-    return (out_img, centroids)
-end
-
-"""
-Makes a set of *num_images* validation images, which are saved to *folder*. 
-
-"""
-function produce_validation_images(folder, num_images)
-    for i in 1:num_images
-        num_atoms = (rand(5:60),rand(5:60))
-        noise_level=rand()*2
-        jiggle_atoms = rand()*0.2
-        width_rand = rand()*0.01+0.01
-        width_range = (width_rand, width_rand*rand(1:5))
-        noise_function = rand([Random.randexp, randn])
-        v_im,atom_pos = make_validation_image(
-                            size=(1000,1000), 
-                            num_atoms=num_atoms, 
-                            noise_level=noise_level, 
-                            jiggle_atoms=jiggle_atoms, 
-                            width_range=width_range, 
-                            noise_function=noise_function)
-        
-        save(folder*string(i)*".png", v_im)
-
-        f = open(folder*string(i)*"_matadata.txt", "w")
-        write(f, "num_atoms = "*string(num_atoms)*"\n")
-        write(f, "noise_level = "*string(noise_level)*"\n")
-        write(f, "jiggle_atoms = "*string(jiggle_atoms)*"\n")
-        write(f, "width_range = "*string(width_range)*"\n")
-        write(f, "noise_function = "*string(noise_function)*"\n")
-        
-        close(f)
-        f = open(folder*string(i)*"_atoms.txt", "w")
-        writedlm(f, atom_pos)
-        close(f)
-    end
-end
 
 function print_range(
     therange::UnitRange,
@@ -363,5 +293,6 @@ end
 #Make sure matrices of dual numbers can be displayed as images
 Gray(dual::Dual) = Gray(dual.value)
 Float64(dual::Dual) = Float64(dual.value)
+Float16(dual::Dual) = Float16(dual.value)
 Dual(pixel::Gray{T}) where T = Dual(T(pixel))
 #ForwardDiff.Dual(pixel::Gray{T}) where T = Dual(T(pixel))
