@@ -47,8 +47,8 @@ module STEMfit
                     euclidean, 
                     pairwise
     import StaticArrays:
-                    @MMatrix,
-                    @MVector
+                    MVector,
+                    SVector
     import DelimitedFiles:
                     writedlm
     import Plots:

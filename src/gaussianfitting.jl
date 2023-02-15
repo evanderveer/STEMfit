@@ -36,8 +36,6 @@ struct GaussianParameters
     end
 end
 
-#include("lossfunctions.jl")
-
 function get_valid_range(
     center::Tuple,
     image_size::Tuple,
@@ -102,63 +100,6 @@ function convert_optimization_parameters_to_gaussian(
     Gaussian([parameters[1:3]; (L_matrix*L_matrix')[BitMatrix([1 1;0 1])]]...)
 end
 
-function fit_A(
-    u::AbstractVector{T},
-    p::GaussianParameters
-) where T
-    
-    #Calculate the loss at three different A values (0, 0.5, 1)
-    parameters = [T.([u[1:2]..., i, u[4:6]...]) for i in 0:0.5:1]
-    res = [STEMfit.loss_function(parameter, p) for parameter in parameters]
-
-    #Find the least squares fit to a parabola
-    A = T.([2 -4 2;-3 4 -1;1 0 0])
-    f = A*res
-
-    #Calculate the minimum of the fitted parabola
-    f_min = -f[2]/(2*f[1])
-
-    #Update the gaussian model
-    new_g = STEMfit.convert_optimization_parameters_to_gaussian([u[1:2]; f_min; u[4:end]])
-    p.image_model.gaussians[p.gaussian_number] = new_g
-end
-
-function fit_linear(
-    u::AbstractVector{T},
-    p::GaussianParameters,
-    parameter_to_fit::Symbol;
-    step_size::Real = 0.1 
-) where T
-    
-    #Calculate the loss at three different parameter values
-    parameter_position = findall(x->x==parameter_to_fit, (:y0,:x0,:A,:a,:b,:c))
-    update_vector = zeros(T, 6)
-    res = Vector{T}(undef, 3)
-    parameter = zeros(T, 6)
-    for (i,val) in enumerate((-step_size, 0, step_size))
-        update_vector[parameter_position] .= val
-        parameter = u .+ T.(update_vector)
-        res[i] = loss_function(parameter, p)
-    end
-
-    #Find the least squares fit to a parabola
-    values = u[parameter_position] .+ (-step_size, 0, step_size)
-    A = T.([values.^2 values ones(T, 3)])
-    f = inv(A)*res
-
-    #Calculate the minimum of the fitted parabola
-    f_min = -f[2]/(2*f[1])
-    parameter[parameter_position] .= f_min
-    f_min_loss = loss_function(parameter, p)
-
-    #Update the gaussian model only if the parabola has a minimum
-    if f[1] > 0 && all(res .> f_min_loss)
-        u[parameter_position] .= f_min
-    end
-    new_g = STEMfit.convert_optimization_parameters_to_gaussian(u)
-    p.image_model.gaussians[p.gaussian_number] = new_g
-end
-
 function loss_function(
     u::AbstractVector{T},
     p::AbstractVector{Any}
@@ -182,64 +123,6 @@ function loss_function(
     T(residual(submodel, p.subimage))
 end
 
-
-function fit!(
-    image::Union{AbstractMatrix{<:Gray{<:Real}},AbstractMatrix{<:Real}},
-    image_model::STEMfit.ImageModel;
-    tolerance::Real = 0.001,
-    max_iterations::Integer = 10
-)
-    residual_changes = Dict([(p, [Inf, 0]) for p in (:y0,:x0,:A,:a,:b,:c)])
-    parameter_set = STEMfit.construct_parameter_set(image_model, image)
-    gaussian_parameters = [STEMfit.GaussianParameters(parameter_set, i) 
-                            for i in 1:length(image_model.gaussians)]
-    initial_parameters = [STEMfit.optimization_parameters(gaussian) 
-                            for gaussian in image_model.gaussians]
-    step_sizes = Dict([(:x0, 0.1), (:y0, 0.1), (:A, 0.1), (:a, 0.01), (:b, 0.01), (:c, 0.01)])
-
-
-    iterations = 0
-    while (any(getindex.(values(residual_changes), 1) .> tolerance)
-            && iterations < max_iterations)
-        for parameter_to_fit in (:y0,:x0,:A,:a,:b,:c)
-            
-            if residual_changes[parameter_to_fit][1] > tolerance
-                residual_changes[parameter_to_fit][2] = 
-                    STEMfit.residual(image, STEMfit.produce_image(image_model))
-                fit_all_gaussians!(
-                            gaussian_parameters, 
-                            initial_parameters, 
-                            parameter_to_fit,
-                            step_sizes[parameter_to_fit]
-                                 )
-                new_residual = STEMfit.residual(image, STEMfit.produce_image(image_model))
-                residual_changes[parameter_to_fit][1] = 
-                    (residual_changes[parameter_to_fit][2] - new_residual) / 
-                    residual_changes[parameter_to_fit][2]
-                residual_changes[parameter_to_fit][2] = new_residual
-            end
-        end
-        iterations += 1
-    end
-    if iterations < max_iterations
-        println("Convergence achieved after " * string(iterations) * " iterations.")
-    else
-        println("Model not converged.")
-    end
-    #residual_changes
-end
-
-function fit_all_gaussians!(
-    gaussian_parameters,
-    initial_parameters,
-    parameter_to_fit::Symbol,
-    step_size 
-) 
-    Threads.@threads for (u,p) in collect(zip(initial_parameters, gaussian_parameters))
-        STEMfit.fit_linear(u, p, parameter_to_fit, step_size=step_size)
-    end
-end
-
 function fit_optim!(image_model, image; tolerance = 0.001, n = nothing, multithreaded=true, method=BFGS())
     parameter_set = construct_parameter_set(image_model, image)
     gaussian_parameters = [GaussianParameters(parameter_set, i) 
@@ -261,18 +144,6 @@ function fit_gaussians(us, ps, optf, n, x_tol, method)
         try
             solve(prob, method, x_tol=x_tol)
         catch 
-            solve(prob, method, x_tol=x_tol)
-        end
-    end
-end
-
-function fit_gaussians_st(us, ps, optf, n, x_tol, method)
-
-    for i in 1:n
-        prob = OptimizationProblem(optf, us[i], ps[i])
-        try
-            solve(prob, method, x_tol=x_tol)
-        catch
             solve(prob, method, x_tol=x_tol)
         end
     end
