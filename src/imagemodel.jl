@@ -1,6 +1,6 @@
 mutable struct ImageModel{T<:Real}
     gaussian_parameters::Vector{SVector{6, T}}
-    unit_cell::UnitCell
+    unit_cell::UnitCell{T}
     atom_tree::NNTree
     background::Matrix{T} 
     nearest_neighbor_indices_tensor::Array{Int64}
@@ -183,7 +183,7 @@ function get_initial_gaussian_parameters(
 ) where {T<:Real}
     get_initial_gaussian_parameters(σ, σ, zeros(T, length(σ)))
 end
-
+"""
 function check_model(
     image_model;
     fix=true
@@ -211,4 +211,4 @@ function check_gaussian(
     isposdef([gaussian.a gaussian.b;gaussian.b gaussian.c]) &&
     gaussian.x0 in valid_range_x &&
     gaussian.y0 in valid_range_y
-end
+end"""

@@ -1,10 +1,16 @@
-struct UnitCell
-    volume::Real
-    angle::Real
-    vector_1::Vector{<:AbstractFloat}
-    vector_2::Vector{<:AbstractFloat}
-    UnitCell((volume, angle, vectors)) = new(volume, angle, vectors[1], vectors[2])
+struct UnitCell{T<:Real}
+    volume::T
+    angle::T
+    vector_1::Vector{T}
+    vector_2::Vector{T}
 end
+
+UnitCell((volume, angle, vectors)) = UnitCell(volume, angle, vectors[1], vectors[2])
+UnitCell(volume, 
+         angle, 
+         vectors_1::AbstractVector{T}, 
+         vectors_2::AbstractVector{T}) where T = 
+         UnitCell(T(volume), T(angle), vectors_1, vectors_2)
 
 """
     find_unit_cells(
