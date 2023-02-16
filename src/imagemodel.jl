@@ -1,9 +1,9 @@
-mutable struct ImageModel{T<:Real}
+mutable struct ImageModel{T<:Real, U<:NNTree, V<:Real, Y<:Real}
     gaussian_parameters::Vector{SVector{6, T}}
-    unit_cell::UnitCell{T}
-    atom_tree::NNTree
-    background::Matrix{T} 
-    nearest_neighbor_indices_tensor::Array{Int64}
+    unit_cell::UnitCell{V}
+    atom_tree::U
+    background::Matrix{Y} 
+    nearest_neighbor_indices_tensor::Array{Int32}
 end
 
 function ImageModel(
@@ -15,7 +15,7 @@ function ImageModel(
     parameter_vectors = [SVector{6, T}(col) for col in eachcol(gaussian_parameters)]
     tree = KDTree(gaussian_parameters[1:2,:])
 
-    nearest_neighbor_indices_tensor = Array{Int64}(undef, 
+    nearest_neighbor_indices_tensor = Array{Int32}(undef, 
                                                    size(background)..., 
                                                    num_nearest_neighbors)
     fill_index_tensor!(nearest_neighbor_indices_tensor, tree)
@@ -31,7 +31,7 @@ function fill_index_tensor!(
     n = size(tensor)[3]
     Threads.@threads for i in CartesianIndices(tensor[:,:,1])
         (y,x) = Tuple(i)
-        @inbounds tensor[y, x, :] = knn(tree, [y,x], n)[1]
+        @inbounds tensor[y, x, :] = Int32.(knn(tree, [y,x], n)[1])
     end
 end
 
@@ -46,8 +46,8 @@ function intensity(
 end
 
 function produce_image(
-    image_model::ImageModel{T}
-) where {T<:Real}
+    image_model::ImageModel{T,U,V,Y}
+) where {T,U,V,Y}
     image_size = size(image_model.nearest_neighbor_indices_tensor[:,:,1])
     output_image = zeros(T, image_size...)
     slice = zeros(T, image_size...)
@@ -61,10 +61,11 @@ function produce_image(
 end
 
 function produce_image(
-    image_model::ImageModel{T},
+    image_model::ImageModel{T,U,V,Y},
     yrange::UnitRange,
     xrange::UnitRange
-) where {T<:Real}
+) where {T,U,V,Y}
+
     image_size = (yrange.stop - yrange.start + 1, xrange.stop - xrange.start + 1)
     output_image = zeros(T, image_size...)
     slice = zeros(T, image_size...)
@@ -77,6 +78,25 @@ function produce_image(
         xrange
         )
     image_model.background[yrange, xrange] .+ output_image
+end
+
+function produce_image(
+    u::AbstractVector{T},
+    p::GaussianParameters
+) where {T}
+
+    image_size = (yrange.stop - yrange.start + 1, xrange.stop - xrange.start + 1)
+    output_image = zeros(T, image_size...)
+    slice = zeros(T, image_size...)
+    fill_image!(
+        output_image, 
+        slice, 
+        nearest_neighbor_indices_tensor, 
+        gaussian_parameters,
+        yrange,
+        xrange
+        )
+    background[yrange, xrange] .+ output_image
 end
 
 function fill_image!(
@@ -212,3 +232,19 @@ function check_gaussian(
     gaussian.x0 in valid_range_x &&
     gaussian.y0 in valid_range_y
 end"""
+
+function convert_image_model_to_dual!(
+    image_model::ImageModel{T,U,V,Y}
+    ) where {T,U,V,Y}
+    Z = ForwardDiff.Dual{Nothing, T, 6}
+    f(x) = SVector{6, Z}([Z(element) for element in x])
+    new_gaussian_parameters = f.(image_model.gaussian_parameters)
+    image_model = ImageModel(
+                    new_gaussian_parameters, 
+                    image_model.unit_cell,
+                    image_model.atom_tree,
+                    image_model.background,
+                    image_model.nearest_neighbor_indices_tensor                    
+                    )
+    return image_model
+end

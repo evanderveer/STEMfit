@@ -1,35 +1,8 @@
-struct ParameterSet
-    image_model
-    subimages
-    ranges
-    ParameterSet(image_model, subimages, ranges) = begin
-        length(subimages) == 
-        length(ranges) == 
-        length(image_model.gaussian_parameters) ||
-        throw(ArgumentError('\n'*"""the number of subimages, ranges and neighbor indices 
-                             must be the same and equal to the number of gaussians in the model"""))
-    new(image_model, subimages, ranges)
-    end
-end
-
-struct GaussianParameters
-    gaussian_number
-    image_model
-    subimage
-    range
-    GaussianParameters(
-        parameter_set::ParameterSet, 
-        gaussian::Integer
-    ) = begin 
-        gaussian > length(parameter_set.subimages) && 
-            throw(ArgumentError("there are <"*gaussian*" gaussians in the model"))
-        new(
-        gaussian,
-        parameter_set.image_model,
-        parameter_set.subimages[gaussian],
-        parameter_set.ranges[gaussian],
-        )
-    end
+struct GaussianParameters{T<:Real}
+    sub_image::AbstractMatrix{T}
+    sub_background::AbstractMatrix{T}
+    sub_neighbor_tensor::AbstractArray{Int32}
+    range::Tuple{UnitRange, UnitRange}
 end
 
 function get_valid_range(
@@ -52,9 +25,9 @@ function get_valid_range(
 end
 
 function construct_parameter_set(
-    image_model::ImageModel{T},
+    image_model::ImageModel{T,U,V,Y},
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
-) where T
+) where {T,U,V,Y}
     window_size = model_unit_cell_to_window_size(image_model)
 
     ranges = [get_valid_range(
@@ -63,10 +36,14 @@ function construct_parameter_set(
                                 window_size
                              )
                              for gaussian in image_model.gaussian_parameters]
+    [GaussianParameters(
+        Y.(image[range...]),
+        image_model.background[range...],
+        image_model.nearest_neighbor_indices_tensor[range..., :],
+        range
+    ) for range in ranges]
 
-    subimages = [image[range...] for range in ranges];
-
-    ParameterSet(image_model, subimages, ranges)
+    
 end
 
 function gaussian_to_optimization(
@@ -76,7 +53,7 @@ function gaussian_to_optimization(
     (y0, x0, A, a, b, c) = gaussian_parameters
     covariance_matrix = [a b;b c]
     (a_t,b_t,c_t) = cholesky(Hermitian(covariance_matrix)).L[BitMatrix([1 0;1 1])]
-    [y0, x0, A, a_t, b_t, c_t]
+    SVector{6, T}(y0, x0, A, a_t, b_t, c_t)
 end
 
 function optimization_to_gaussian(
@@ -88,50 +65,38 @@ function optimization_to_gaussian(
     L_matrix = zeros(T, 2, 2)
     L_matrix[BitMatrix([1 0;1 1])] = optimization_parameters[4:6]
 
-    [optimization_parameters[1:3]; (L_matrix*L_matrix')[BitMatrix([1 1;0 1])]]
+    SVector{6, T}([optimization_parameters[1:3]; (L_matrix*L_matrix')[BitMatrix([1 1;0 1])]])
 end
 
-function loss_function(
-    u::AbstractVector{T},
-    p::AbstractVector{Any}
-) where {T<:Real}
-    (subimage, image_model, gaussian_number, neighbor_indices, range) = p
-
-    image_model.gaussians[gaussian_number] = convert_optimization_parameters_to_gaussian(u)
-    submodel = produce_image(image_model, range..., neighbor_indices)
-
-    T(residual(submodel, subimage))
-end
-
-function loss_function(
-    u::AbstractVector{T},
-    p::GaussianParameters
-) where {T<:Real}
-    p.image_model.gaussians[p.gaussian_number] = 
-        convert_optimization_parameters_to_gaussian(u)
-    submodel = produce_image(p.image_model, p.range...)
-    
-    T(residual(submodel, p.subimage))
-end
-
+"""
 function loss_function(
     u::SVector{6, T},
     p::GaussianParameters
 ) where {T<:Real}
     p.image_model.gaussian_parameters[p.gaussian_number] = 
         SVector{6,T}(optimization_to_gaussian(u))
+    println(u[1])
     submodel = produce_image(p.image_model, p.range...)
     T(residual(submodel, p.subimage))
 end
+"""
+
+function loss_function(
+    u::AbstractVector{T},
+    p::GaussianParameters
+) where {T<:Real}
+
+    u_g = optimization_to_gaussian(u)
+    submodel = produce_image(u_g, p)
+    T(residual(submodel, p.sub_image))
+end
 
 function fit!(image_model, image; tolerance = 0.001, n = nothing, multithreaded=true, method=BFGS())
-    parameter_set = construct_parameter_set(image_model, image)
-    gaussian_parameters = [GaussianParameters(parameter_set, i) 
-                                for i in 1:length(image_model.gaussians)]
-    initial_parameters = [optimization_parameters(gaussian) 
-                                for gaussian in image_model.gaussians];
+    gaussian_parameters = construct_parameter_set(image_model, image)
+    initial_parameters = gaussian_to_optimization.(image_model.gaussian_parameters) 
     optf = OptimizationFunction(loss_function, Optimization.AutoForwardDiff())
-    if n === nothing; n = length(image_model.gaussians); end 
+return (gaussian_parameters, initial_parameters)
+    if n === nothing; n = length(initial_parameters); end 
     println("Fitting " * string(n) * " Gaussian functions")
 
     if multithreaded; fit_gaussians(initial_parameters, gaussian_parameters, optf, n, tolerance, method)
@@ -139,6 +104,18 @@ function fit!(image_model, image; tolerance = 0.001, n = nothing, multithreaded=
 end
 
 function fit_gaussians(us, ps, optf, n, x_tol, method)
+
+    Threads.@threads for i in 1:n
+        prob = OptimizationProblem(optf, us[i], ps[i])
+        try
+            solve(prob, method, x_tol=x_tol)
+        catch 
+            solve(prob, method, x_tol=x_tol)
+        end
+    end
+end
+
+function fit_gaussians_st(us, ps, optf, n, x_tol, method)
 
     Threads.@threads for i in 1:n
         prob = OptimizationProblem(optf, us[i], ps[i])
