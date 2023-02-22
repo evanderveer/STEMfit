@@ -1,7 +1,9 @@
-struct GaussianParameters{T<:Real}
-    sub_image::AbstractMatrix{T}
-    sub_background::AbstractMatrix{T}
-    sub_neighbor_tensor::AbstractArray{Int32}
+struct GaussianParameters{T,U,V,Y}
+    index::Int32
+    image_model::ImageModel{T,U,V,Y}
+    subimage::AbstractMatrix{T}
+    subbackground::AbstractMatrix{T}
+    neighbor_image::AbstractMatrix{T}
     range::Tuple{UnitRange, UnitRange}
 end
 
@@ -37,13 +39,26 @@ function construct_parameter_set(
                              )
                              for gaussian in image_model.gaussian_parameters]
     [GaussianParameters(
+        Int32(idx),
+        image_model,
         Y.(image[range...]),
         image_model.background[range...],
-        image_model.nearest_neighbor_indices_tensor[range..., :],
+        produce_image(image_model, range..., Int32(idx)),
         range
-    ) for range in ranges]
+    ) for (idx,range) in enumerate(ranges)]
 
     
+end
+
+function neighbor_indices(
+    image_model,
+    range,
+    index
+)
+    indices_full = unique!(sort!(vec(
+        image_model.nearest_neighbor_indices_tensor[range..., :]
+                    )))
+    indices_full[indices_full .!= index]
 end
 
 function gaussian_to_optimization(
@@ -136,3 +151,23 @@ residual
 
 model_unit_cell_to_window_size(model::ImageModel) = 0.75* maximum([norm(model.unit_cell.vector_1), 
                                                                    norm(model.unit_cell.vector_2)])
+
+function produce_image(
+    u::AbstractVector{T},
+    p::GaussianParameters{U}
+) where {T, U}
+
+    (yrange, xrange) = p.range
+    image_size = (yrange.stop - yrange.start + 1, xrange.stop - xrange.start + 1)
+    output_image = zeros(T, image_size...)
+    slice = zeros(T, image_size...)
+    fill_image!(
+        output_image, 
+        slice, 
+        p.sub_neighbor_tensor, 
+        p.image_model.gaussian_parameters,
+        yrange,
+        xrange
+        )
+    p.sub_background[yrange, xrange] .+ output_image
+end

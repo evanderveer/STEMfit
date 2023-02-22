@@ -81,9 +81,11 @@ function produce_image(
 end
 
 function produce_image(
-    u::AbstractVector{T},
-    p::GaussianParameters
-) where {T}
+    image_model::ImageModel{T,U,V,Y},
+    yrange::UnitRange,
+    xrange::UnitRange,
+    exclude_index::Int32
+) where {T,U,V,Y}
 
     image_size = (yrange.stop - yrange.start + 1, xrange.stop - xrange.start + 1)
     output_image = zeros(T, image_size...)
@@ -91,13 +93,16 @@ function produce_image(
     fill_image!(
         output_image, 
         slice, 
-        nearest_neighbor_indices_tensor, 
-        gaussian_parameters,
+        image_model.nearest_neighbor_indices_tensor, 
+        image_model.gaussian_parameters,
         yrange,
-        xrange
+        xrange,
+        exclude_index
         )
-    background[yrange, xrange] .+ output_image
+    image_model.background[yrange, xrange] .+ output_image
 end
+
+
 
 function fill_image!(
     output_image::AbstractMatrix{<:Real}, 
@@ -135,6 +140,28 @@ function fill_image!(
     end
 end
 
+function fill_image!(
+    output_image::AbstractMatrix{<:Real}, 
+    slice::AbstractMatrix{<:Real}, 
+    nearest_neighbor_indices_tensor::AbstractArray{<:Integer}, 
+    gaussian_parameters::AbstractVector{<:AbstractVector{<:Real}},
+    yrange::UnitRange, 
+    xrange::UnitRange,
+    exclude_index::Int32
+)
+    for j in 1:size(nearest_neighbor_indices_tensor)[3]
+        fill_slice_intensity!(
+            slice,
+            nearest_neighbor_indices_tensor[yrange, xrange, j], 
+            gaussian_parameters,
+            yrange,
+            xrange,
+            exclude_index
+            )
+        output_image .+= slice
+    end
+end
+
 function fill_slice_intensity!(
     slice::AbstractMatrix{<:Real},
     nearest_neighbor_index_matrix::AbstractMatrix{<:Integer}, 
@@ -160,6 +187,24 @@ function fill_slice_intensity!(
     end
 end
 
+function fill_slice_intensity!(
+    slice::AbstractMatrix{T},
+    nearest_neighbor_index_matrix::AbstractMatrix{<:Integer}, 
+    gaussian_parameters::AbstractVector{<:AbstractVector{<:Real}},
+    yrange::UnitRange,
+    xrange::UnitRange,
+    exclude_index::Int32
+    ) where {T<:Real}
+     for i in CartesianIndices(slice)
+        (y,x) = (yrange.start, xrange.start) .+ Tuple(i)
+        if nearest_neighbor_index_matrix[i] == exclude_index
+            @inbounds slice[i] = zero(T)
+        else
+            @inbounds slice[i] = 
+            intensity(gaussian_parameters[nearest_neighbor_index_matrix[i]], y, x)
+        end
+    end
+end
 
 
 function transform_gaussian_parameters(
