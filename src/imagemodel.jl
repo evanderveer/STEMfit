@@ -183,3 +183,25 @@ function get_initial_gaussian_parameters(
 ) where {T<:Real}
     get_initial_gaussian_parameters(σ, σ, zeros(T, length(σ)))
 end
+
+function model_to_matrix(
+    model::ImageModel{T,U,V,Y}
+) where {T,U,V,Y}
+
+    matrix = Matrix{T}(undef, 6, length(model.gaussian_parameters))
+    for (i, parameters) in enumerate(model.gaussian_parameters)
+        matrix[:,i] = vec(parameters)
+    end
+    matrix
+end
+
+function save_model(
+    model::ImageModel,
+    filename::String
+    )
+    matrix = model_to_matrix(model)
+    f = open(filename, "w")
+    writedlm(f, ["y0" "x0" "A" "a" "b" "c"])
+    writedlm(f, matrix')
+    close(f)
+end
