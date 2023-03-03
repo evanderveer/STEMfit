@@ -135,7 +135,9 @@ function fit!(
        
     gaussian_fit_levels = [floor(10*x[3])/10 for x in image_model.gaussian_parameters]
 
-    for A in 1:-0.1:A_limit
+    for A in 0.9:-0.1:A_limit
+        println("Fitting atoms with " * string(A + 0.1) * "< A < " * string(A))
+        flush(stdout)
 
         gaussian_parameters = construct_parameter_set(image_model, image)
         initial_parameters = gaussian_to_optimization.(image_model.gaussian_parameters) 
@@ -173,8 +175,6 @@ function fit!(
             lower_bounds[gaussians_to_fit],
             upper_bounds[gaussians_to_fit]
             )
-        println(sum(invalid_gaussians))
-        flush(stdout)
 
     end
 end

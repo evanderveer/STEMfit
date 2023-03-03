@@ -105,6 +105,16 @@ function get_kernels(
     (minmap_kernel, gaussian_kernel)
 end
 
+"""
+    get_intensity_above_background(
+        positions::AbstractMatrix{<:Real},
+        intensities::AbstractVector{<:Real},
+        background::AbstractMatrix{<:Gray{<:Real}}
+    )
+    -> Real
+
+Calculates the intensity of an atom above the given background
+"""
 function get_intensity_above_background(
     positions::AbstractMatrix{<:Real},
     intensities::AbstractVector{<:Real},

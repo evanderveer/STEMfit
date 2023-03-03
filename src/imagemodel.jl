@@ -29,7 +29,14 @@ function ImageModel(
                size(background))
 end
 
+"""
+    fill_index_tensor!(
+        tensor::AbstractArray{<:Integer}, 
+        tree::NNTree
+    )
 
+Fills `tensor[y,x,1:n]` with the n nearest neighbors for each point x,y
+"""
 function fill_index_tensor!(
     tensor::AbstractArray{<:Integer}, 
     tree::NNTree
@@ -41,17 +48,23 @@ function fill_index_tensor!(
     end
 end
 
+"""
+    intensity(
+        parameters::AbstractVector,
+        y::Real,
+        x::Real
+    )
 
+Calculates the intensity of a gaussian defined by `parameters` at a point x,y
+"""
 function intensity(
-    model::AbstractVector,
+    parameters::AbstractVector,
     y::Real,
     x::Real
     ) 
-    (y0, x0, A, a, b, c) = model
+    (y0, x0, A, a, b, c) = parameters
     A*exp(-(a * (x - x0)^2 + 2 * b * (x - x0) * (y - y0) + c * (y - y0)^2))
 end
-
-
 
 function produce_image(
     image_model::ImageModel{T,U,V,Y};

@@ -280,15 +280,30 @@ Calculates the angular distance of `angle` to the in-plane direction
 """
 dist_to_ip(angle::Real) = minimum([abs(angle-270), abs(angle-90)])
 
-function uc_squareness(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
-    (side_1, side_2) = norm.(basis_vectors)
-    if side_1 >= side_2
-        return side_1/side_2
-    else
-        return side_2/side_1
-    end
+"""
+    uc_squareness(
+                  basis_vectors::AbstractVector{<:AbstractVector{<:Real}}
+    )
+
+Calculates the squareness of the unit cell, where squareness = side 1/side 2   
+"""
+function uc_squareness(
+    basis_vectors::AbstractVector{<:AbstractVector{<:Real}}
+    )
+    squareness = /(norm.(basis_vectors)...)
+    if squareness < 1; squareness = 1/squareness; end
+    squareness
 end 
 
+"""
+    is_different_unit_cell(
+        uc_1,
+        uc_2,
+        tolerance
+    )
+
+Checks if two unit cells are different
+"""
 function is_different_unit_cell(
     uc_1,
     uc_2,
