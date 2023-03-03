@@ -94,10 +94,10 @@ function show_images(images...; rows=1, enlarge=1, zoom=true, kwargs...)
     if !any(s1 != s2 for (s1,s2) in image_sizes) && zoom == true
         image_sizes = [s[1] for s in image_sizes]
         enlargement_factors = enlarge*maximum(image_sizes)./image_sizes
-        zoomed_images = [enlarge_image(im, ef) for (im,ef) in zip(images, enlargement_factors)]
+        zoomed_images = [enlarge_image(im, Int64(ef)) for (im,ef) in zip(images, enlargement_factors)]
         return mosaicview(zoomed_images, nrow=rows; kwargs...)
     end
-    mosaicview(enlarge_image.(images, enlarge), nrow=rows; kwargs...)
+    mosaicview(enlarge_image.(images, Int64(enlarge)), nrow=rows; kwargs...)
 end
 
 function plot_atoms_on_image(
@@ -156,7 +156,7 @@ Use at your own peril!"))
     if convert
         img = Matrix{Gray{N0f8}}(img)
     end
-    Gray{Float32}.(img)
+    Gray{Float64}.(img)
 end
 
 """
@@ -237,15 +237,19 @@ function residual_image(im1, im2; no_text = false)
     stretch_image(res_img)
 end
 
-function enlarge_image(image, enlargement_factor)
-    [
-        image[
-            floor(Int64, i/enlargement_factor), 
-            floor(Int64, j/enlargement_factor)
-            ] 
-            for i in enlargement_factor:size(image)[1]*enlargement_factor, 
-                j in enlargement_factor:size(image)[2]*enlargement_factor
-    ]
+function enlarge_image(
+    image::AbstractMatrix{T},
+    enlargement_factor::Integer
+    ) where T
+    image = parent(image)
+    new_image = zeros(T, (size(image).*enlargement_factor)...)
+    for coord in CartesianIndices(image)
+        new_start = (Tuple(coord)  .- (1,1)).*enlargement_factor .+ (1,1)
+        new_end = new_start .+ (enlargement_factor-1, enlargement_factor-1)
+        new_range = (new_start[1]:new_end[1], new_start[2]:new_end[2])
+        new_image[new_range...] .= image[coord]        
+    end 
+    new_image
 end
 
 function avg_perc_dev(im1, im2)

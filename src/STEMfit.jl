@@ -48,7 +48,9 @@ module STEMfit
                     pairwise
     import StaticArrays:
                     MVector,
-                    SVector
+                    SVector,
+                    MMatrix,
+                    SMatrix
     import DelimitedFiles:
                     writedlm
     import Plots:
@@ -64,18 +66,18 @@ module STEMfit
     import ForwardDiff:
                     Dual #Import explicitly so it can be extended
     import OptimizationOptimJL:
-                    Newton,
-                    BFGS,
-                    LBFGS
+                    BFGS
+    import LineSearches:
+                    BackTracking
     import Base:
                     Float64,
                     Float16
+    import OffsetArrays:
+                    OffsetArray
 
     include("findatoms.jl")
     include("dbscan.jl")
     include("finduc.jl")
-    #include("gaussianmodel.jl")
-    #include("latticemodel.jl")
     include("imagemodel.jl")
     include("background.jl")
     include("transformation.jl")
