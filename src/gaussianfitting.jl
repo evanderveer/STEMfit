@@ -128,7 +128,7 @@ function fit!(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}; 
     tolerance::Float64 = 0.001, 
     number_to_fit::Integer = typemax(Int),  
-    A_limit::AbstractFloat = 0.1, 
+    A_limit::AbstractFloat = 0.0, 
     use_bounds::Bool = true,
     preconditioning::Bool = true
     )
