@@ -129,24 +129,31 @@ function fit!(
     tolerance::Float64 = 0.001, 
     number_to_fit::Integer = typemax(Int),  
     A_limit::AbstractFloat = 0.1, 
-    use_bounds::Bool = true
+    use_bounds::Bool = true,
+    preconditioning::Bool = true
     )
-    optf = OptimizationFunction(loss_function, Optimization.AutoForwardDiff())
-       
+
+    if preconditioning
+        println("Starting preconditioning procedure")
+        flush(stdout)
+        precondition_atom_widths!(image_model, image)
+    end
+
+    optf = OptimizationFunction(loss_function, Optimization.AutoForwardDiff())   
     gaussian_fit_levels = [floor(10*x[3])/10 for x in image_model.gaussian_parameters]
 
+    println("Starting fitting procedure")
+    flush(stdout)
     for A in 0.9:-0.1:A_limit
+        println("Fitting: " * string(100-A*100) * "% \r")
+        flush(stdout)
+
         gaussian_parameters = construct_parameter_set(image_model, image)
         initial_parameters = gaussian_to_optimization.(image_model.gaussian_parameters) 
         (lower_bounds, upper_bounds) = get_bounds(initial_parameters)
         gaussians_to_fit = gaussian_fit_levels .== A
         
         n = clamp(sum(gaussians_to_fit), 0:number_to_fit)
-
-        println("Fitting " * string(n) * 
-                " atoms with " * string(A + 0.1) * 
-                " > A > " * string(A))
-        flush(stdout)
 
         fit_gaussians(initial_parameters[gaussians_to_fit], 
                       gaussian_parameters[gaussians_to_fit], 
@@ -250,3 +257,35 @@ function get_bounds(us)
 end
 
 is_invalid_gaussian(u, lb, ub) = any(u .< lb) || any(u .> ub)
+
+function precondition_atom_widths!(
+    image_model,
+    image
+)
+
+    #Use finite differences here so we don have to adapt the code to accept dual numbers
+    optf = OptimizationFunction(optimize_width, Optimization.AutoFiniteDiff())
+    prob = OptimizationProblem(optf, [1.0], (image=image, image_model=image_model))
+    res = solve(prob, BFGS())[1]
+    change_atom_widths!(res, image_model)
+end
+
+function change_atom_widths!(
+    factor,
+    image_model
+)
+    for gaussian in image_model.gaussian_parameters
+        gaussian[4] *= factor
+        gaussian[6] *= factor
+    end
+end
+
+function optimize_width(
+    factor,
+    p
+)
+    change_atom_widths!(factor[1], p.image_model)
+    res = residual(p.image, produce_image(p.image_model))
+    change_atom_widths!(1/factor[1], p.image_model)
+    res
+end

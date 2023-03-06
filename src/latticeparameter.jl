@@ -137,6 +137,13 @@ function get_strain_from_lattice_parameters(
     strain_matrix
 end
 
+"""
+    layer_assignments(
+        atom_positions::AbstractMatrix{T}, 
+        layer_boundaries::AbstractVector
+    )
+    
+"""
 function layer_assignments(
     atom_positions::AbstractMatrix{T}, 
     layer_boundaries::AbstractVector
