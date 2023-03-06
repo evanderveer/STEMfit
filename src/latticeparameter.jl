@@ -29,7 +29,7 @@ function calculate_lattice_parameters(#TODO: Clean up
     end
     vec_1 = unit_cell.vector_1
     vec_2 = unit_cell.vector_2
-    inv_matrix = inv([vec_2 vec_1])
+    inv_matrix = inv([vec_1 vec_2])
     transformed_positions = inv_matrix * positions
 
     tree = KDTree(transformed_positions)

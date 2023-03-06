@@ -240,7 +240,7 @@ function unit_cells_from_nn(
     end
 
     #Return a list of UnitCell structs
-    UnitCell.(eachrow(filtered_ucs))::Vector{UnitCell}
+    UnitCell.(eachrow(filtered_ucs))
 end
 
 """
@@ -294,6 +294,59 @@ function uc_squareness(
     if squareness < 1; squareness = 1/squareness; end
     squareness
 end 
+
+"""
+    uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
+        -> Real
+
+Calculate the area of a parallelogram of two basis vectors.
+"""
+function uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
+    if length(basis_vectors) != 2
+        throw(ArgumentError("number of vectors must be 2"))
+    end
+    abs(cross([basis_vectors[1]..., 0],
+          [basis_vectors[2]..., 0])[3])
+end
+
+"""Calculate the angle (0-360deg) of a vector wrt the vector [1,0]."""
+function uc_angle(basis_vector::AbstractVector{<:Real})
+    (y,x) = Float32.(basis_vector)
+    if x == 0f0 || y == 0f0
+        return 0f0
+    elseif x<0f0 && y<0f0
+        return 180f0 + atand(x/y)
+    elseif x<0f0 && y>0f0
+        return 360f0 + atand(x/y)
+    elseif x>0f0 && y<0f0
+        return 90 + atand(-x/y)
+    elseif x>0f0 && y>0f0
+        return atand(x/y)
+    end
+    throw(ArgumentError)
+
+end
+
+"""
+    uc_angle(vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
+        -> Real
+
+Calculate the angle between two vectors.
+"""
+function uc_angle(vectors::AbstractVector{<:AbstractVector{<:Real}})
+    if length(vectors) != 2
+        throw(ArgumentError("number of vectors must be 2"))
+    end
+    (a,b) = vectors
+    angle = acosd(clamp(
+                dot(a,b)/(norm(a)*norm(b)), -1, 1
+               )
+         )
+    if isnan(angle) 
+        return 0f0
+    end
+    return angle
+end
 
 """
     is_different_unit_cell(

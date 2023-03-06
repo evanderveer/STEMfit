@@ -2,8 +2,6 @@
     plot_unit_cells(
         unit_cells,
         neighbors;
-        xlim=(-70,70),
-        ylim=(-70,70),
         kwargs...
     )
 
@@ -12,8 +10,6 @@ Plot a list of unit cells.
 function plot_unit_cells( #Very ugly --> refactor
     unit_cells,
     neighbors;
-    xlim=(-70,70),
-    ylim=(-70,70),
     kwargs...
 )
     unit_cell(vectors) = Shape(
@@ -21,6 +17,8 @@ function plot_unit_cells( #Very ugly --> refactor
         [0,vectors[1][1], vectors[1][1]+vectors[2][1], vectors[2][1]]
                                 )
 
+    xlim = 1.5 .* extrema(neighbors[2,:])
+    ylim = 1.5 .* extrema(neighbors[1,:])
     uc_plots = []
     for (i,uc) in enumerate(unit_cells) 
         p = scatter(
@@ -89,17 +87,6 @@ function plot_unit_cells( #Very ugly --> refactor
 
 end
 
-function show_images(images...; rows=1, enlarge=1, zoom=true, kwargs...) 
-    image_sizes = size.(images)
-    if !any(s1 != s2 for (s1,s2) in image_sizes) && zoom == true
-        image_sizes = [s[1] for s in image_sizes]
-        enlargement_factors = enlarge*maximum(image_sizes)./image_sizes
-        zoomed_images = [enlarge_image(im, Int64(ef)) for (im,ef) in zip(images, enlargement_factors)]
-        return mosaicview(zoomed_images, nrow=rows; kwargs...)
-    end
-    mosaicview(enlarge_image.(images, Int64(enlarge)), nrow=rows; kwargs...)
-end
-
 function plot_atoms_on_image(
                             image, 
                             atom_positions; 
@@ -143,7 +130,8 @@ Load an image from a file. Optionally convert into the right format.
 """
 function load_image(
                     filename::String;
-                    convert::Bool = false
+                    convert::Bool = false,
+                    downscale_factor::Union{<:Integer, Nothing} = nothing
                    )
 
     img = load(filename)
@@ -156,57 +144,11 @@ Use at your own peril!"))
     if convert
         img = Matrix{Gray{N0f8}}(img)
     end
-    Gray{Float64}.(img)
-end
-
-"""
-    uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
-        -> Real
-
-Calculate the area of a parallelogram of two basis vectors.
-"""
-function uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
-    abs(cross([basis_vectors[1]..., 0],
-          [basis_vectors[2]..., 0])[3])
-end
-
-"""Calculate the angle (0-360deg) of a vector wrt the vector [1,0]."""
-function uc_angle(basis_vector::AbstractVector{<:Real})
-    (y,x) = Float32.(basis_vector)
-    if x == 0f0 || y == 0f0
-        return 0f0
-    elseif x<0f0 && y<0f0
-        return 180f0 + atand(x/y)
-    elseif x<0f0 && y>0f0
-        return 360f0 + atand(x/y)
-    elseif x>0f0 && y<0f0
-        return 90 + atand(-x/y)
-    elseif x>0f0 && y>0f0
-        return atand(x/y)
+    if downscale_factor === nothing
+        return Gray{Float64}.(img)
     end
-    throw(ArgumentError)
-
+    downscale_image(Gray{Float64}.(img), downscale_factor)
 end
-
-"""
-    uc_angle(basis_vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
-        -> Real
-
-Calculate the angle between two basis vectors.
-"""
-function uc_angle(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
-    (a,b) = basis_vectors
-    angle = acosd(clamp(
-                dot(a,b)/(norm(a)*norm(b)), -1, 1
-               )
-         )
-    if isnan(angle) 
-        return 0f0
-    end
-    return angle
-end
-
-
 
 """
     decimal_part(value::Real) -> Float64
@@ -220,6 +162,17 @@ julia> decimal_part(1.3)
 ```
 """
 decimal_part(value::Real) = Float64(value - floor(value))
+
+function show_images(images...; rows=1, enlarge=1, zoom=true, kwargs...) 
+    image_sizes = size.(images)
+    if !any(s1 != s2 for (s1,s2) in image_sizes) && zoom == true
+        image_sizes = [s[1] for s in image_sizes]
+        enlargement_factors = enlarge*maximum(image_sizes)./image_sizes
+        zoomed_images = [enlarge_image(im, Int64(ef)) for (im,ef) in zip(images, enlargement_factors)]
+        return mosaicview(zoomed_images, nrow=rows; kwargs...)
+    end
+    mosaicview(enlarge_image.(images, Int64(enlarge)), nrow=rows; kwargs...)
+end
 
 function stretch_image(image)
     im_min = minimum(image)
@@ -242,23 +195,18 @@ function enlarge_image(
     enlargement_factor::Integer
     ) where T
     image = parent(image)
-    new_image = zeros(T, (size(image).*enlargement_factor)...)
-    for coord in CartesianIndices(image)
-        new_start = (Tuple(coord)  .- (1,1)).*enlargement_factor .+ (1,1)
-        new_end = new_start .+ (enlargement_factor-1, enlargement_factor-1)
-        new_range = (new_start[1]:new_end[1], new_start[2]:new_end[2])
-        new_image[new_range...] .= image[coord]        
-    end 
+    imresize(image, size(image).*enlargement_factor)
+end
+
+function downscale_image(image::AbstractMatrix{T}, factor::Integer) where T
+    image = parent(image)
+    new_size = floor.(Int64, size(image) ./ factor)
+    new_image = Matrix{T}(undef, new_size...)
+    for i in CartesianIndices(new_image)
+        new_i = (Tuple(i) .- (1,1)) .* factor .+ (1,1)
+        new_image[i] = mean(image[new_i[1]:(new_i[1]+factor-1), new_i[2]:(new_i[2]+factor-1)])
+    end
     new_image
-end
-
-function avg_perc_dev(im1, im2)
-    a = [abs(px1-px2)/px1 for (px1, px2) in zip(im1,im2)]
-    mean(a*100)
-end
-
-function inverse_matrix(uc::UnitCell)
-    inv([uc.vector_1 uc.vector_2])
 end
 
 function save_atomic_positions!(
@@ -273,25 +221,6 @@ function save_atomic_positions!(
     writedlm(f, permutedims(headers), ',')
     writedlm(f, matrix, ',')
     close(f)
-end
-
-
-function print_range(
-    therange::UnitRange,
-    thelist::Vector
-)
-    for (i,j) in zip(therange,thelist)
-        println(string(i)*'\t'*string(j)*'\r')
-    end 
-end
-
-function print_range(
-    therange::Array,
-    thelist::Vector
-)
-    for (i,j) in zip(therange,thelist)
-        println(string(i)*'\t'*string(j)*'\r')
-    end 
 end
 
 #Make sure matrices of dual numbers can be displayed as images

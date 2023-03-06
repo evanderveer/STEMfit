@@ -17,7 +17,8 @@ module STEMfit
                     component_lengths,
                     mapwindow, 
                     N0f8, 
-                    mosaicview
+                    mosaicview,
+                    imresize
     import ImageBinarization:
                     Niblack,
                     Sauvola,
