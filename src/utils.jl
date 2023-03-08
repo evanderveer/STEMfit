@@ -168,7 +168,7 @@ function show_images(images...; rows=1, enlarge=1, zoom=true, kwargs...)
     if !any(s1 != s2 for (s1,s2) in image_sizes) && zoom == true
         image_sizes = [s[1] for s in image_sizes]
         enlargement_factors = enlarge*maximum(image_sizes)./image_sizes
-        zoomed_images = [enlarge_image(im, Int64(ef)) for (im,ef) in zip(images, enlargement_factors)]
+        zoomed_images = [enlarge_image(im, ef) for (im,ef) in zip(images, enlargement_factors)]
         return mosaicview(zoomed_images, nrow=rows; kwargs...)
     end
     mosaicview(enlarge_image.(images, Int64(enlarge)), nrow=rows; kwargs...)
@@ -192,10 +192,10 @@ end
 
 function enlarge_image(
     image::AbstractMatrix{T},
-    enlargement_factor::Integer
+    enlargement_factor::Real
     ) where T
     image = parent(image)
-    imresize(image, size(image).*enlargement_factor)
+    imresize(image, round.(Int64, size(image).*enlargement_factor))
 end
 
 function downscale_image(image::AbstractMatrix{T}, factor::Integer) where T
