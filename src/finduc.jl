@@ -21,7 +21,10 @@ UnitCell(volume,
                     uc_allowed_areas::UnitRange{<:Real} = 10:Inf,
                     uc_allowed_angles::UnitRange{<:Real} = 5:360,
                     min_neighbor_dist::Real = 5,
-                    filter_tolerance::Real = 10
+                    filter_tolerance::Real = 10,
+                    use_all_atoms::Bool = false,
+                    plot::Bool = true,
+                    uc_to_plot::UnitRange = 1:8
                     ])
                     -> Tuple{Matrix{Any}, Matrix{<:AbstractFloat}, KDTree}
 
@@ -43,6 +46,8 @@ to `true`. This may incur very long compute times.
 - `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
 - `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
 - `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
+- `plot::Bool = true`: Determines whether unit cells are plotted 
+- `uc_to_plot::UnitRange = 1:8`: Determines how many unit cells to plot 
 """
 function find_unit_cells(
     centroids::Matrix{<:Real};
@@ -53,7 +58,9 @@ function find_unit_cells(
     uc_allowed_angles::UnitRange{<:Real} = 5:360,
     min_neighbor_dist::Union{<:Real, Symbol} = :auto,
     filter_tolerance::Real = 0.1,
-    use_all_atoms::Bool = false
+    use_all_atoms::Bool = false,
+    plot::Bool = true,
+    uc_to_plot::UnitRange = 1:8
 )
 
     #Find nearest neighbors for all atoms in centroids
@@ -86,6 +93,10 @@ function find_unit_cells(
                                 uc_allowed_areas=uc_allowed_areas,
                                 tolerance=filter_tolerance
                                 )
+
+    if plot
+        plot_unit_cells(sorted_uc[uc_to_plot], neighbors)
+    end
 
     return (sorted_uc, neighbors, atom_tree)
 end

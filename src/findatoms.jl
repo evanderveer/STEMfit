@@ -5,7 +5,8 @@
         use_adaptive::Bool = true,
         window_size::Integer = 8,
         bias::Real = 0.8,
-        min_atom_size::Integer = 10]
+        min_atom_size::Integer = 10,
+        plot::Bool = true]
         ) 
         -> Tuple(Matrix{Float32}, Vector{Float32}, Vector{Float32}, Matrix{Gray{Float32}})
 
@@ -26,7 +27,8 @@ function find_atoms(
     window_size::Integer = 8,
     bias::Real = 0.8,
     min_atom_size::Integer = 10,
-    binarization_algorithm::Type{<:AbstractImageBinarizationAlgorithm} = Niblack
+    binarization_algorithm::Type{<:AbstractImageBinarizationAlgorithm} = Niblack,
+    plot::Bool = true
 )   
 
     if(threshold < 0.0 || threshold > 1.0) 
@@ -58,6 +60,10 @@ function find_atoms(
 
     #Remove atoms which are very small (<10 px)
     size_filter = sizes .> sqrt(min_atom_size)
+
+    if plot
+        plot_atomic_positions(centroid_matrix[:, size_filter], image)
+    end
 
     (centroid_matrix[:, size_filter], sizes[size_filter], intensities[size_filter], bw_opt)
 end
@@ -99,7 +105,8 @@ end
         image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
         [,number_of_singular_vectors::Union{Integer, Symbol} = :auto,
         kernel_size::Integer = 1,
-        gaussian_convolution_only::Bool = false]
+        gaussian_convolution_only::Bool = false,
+        plot::Bool = false]
     ) 
     -> Matrix{<:Gray{<:AbstractFloat}}
 
@@ -110,13 +117,16 @@ it will be determined automatically. `kernel_size` is the size of the gaussian k
 that is used for the convolution. For low-resolution images, set `kernel_size = 1`. 
 If the `gaussian_convolution_only` parameter is set to true, no SVD filtering is done
 and only a gaussian convolution is applied to the image. Possibly useful for images with
-no or little translational symmetry.
+no or little translational symmetry. If `plot` is set to true, a plot will be generated
+of the power of each singular vector of the image for diagnostic purposes.
 """
 function filter_image(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}};
     number_of_singular_vectors::Union{Integer, Symbol} = :auto,
     kernel_size::Integer = 1,
-    gaussian_convolution_only::Bool = false
+    gaussian_convolution_only::Bool = false,
+    plot::Bool = false,
+    kwargs...
 )
     if !gaussian_convolution_only
         svd_res = svd(image)
@@ -133,10 +143,16 @@ function filter_image(
                         Σ[1:number_of_singular_vectors, 1:number_of_singular_vectors]*
                         Vᵀ[1:number_of_singular_vectors,:]
                         )
-        return (imfilter(filt_im, Kernel.gaussian(kernel_size)), svd_res.S)
+        filtered_image = imfilter(filt_im, Kernel.gaussian(kernel_size))
     else
-        return (imfilter(image, Kernel.gaussian(kernel_size)), nothing)
+        filtered_image = imfilter(image, Kernel.gaussian(kernel_size))
     end
+
+    if plot && !gaussian_convolution_only
+        plot_singular_vectors(svd_res.S, number_of_singular_vectors; kwargs...)
+    end
+
+    filtered_image
 end
 
 """

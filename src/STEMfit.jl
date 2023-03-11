@@ -61,7 +61,8 @@ module STEMfit
                     plot!,
                     Shape,
                     hline!,
-                    vline!
+                    vline!,
+                    histogram
     using Optimization
     using ForwardDiff
     import ForwardDiff:
@@ -84,6 +85,7 @@ module STEMfit
     include("transformation.jl")
     include("latticeparameter.jl")
     include("gaussianfitting.jl")
+    include("plotting.jl")
     include("utils.jl")
 
 end
