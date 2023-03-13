@@ -146,7 +146,8 @@ end
 """
 function layer_assignments(
     atom_positions::AbstractMatrix{T}, 
-    layer_boundaries::AbstractVector
+    layer_boundaries::AbstractVector;
+    plot::Bool = true
     ) where T
     layer_boundaries = [zero(T), T.(layer_boundaries)..., maximum(atom_positions[1, :])]
     layer_filters = []
@@ -155,5 +156,10 @@ function layer_assignments(
                              atom_positions[1, :] .<= 
                              layer_boundaries[boundary+1]) 
     end
-    sum(filter .* i for (i,filter) in enumerate(layer_filters), dims=2)
+    layer_assignments = sum(filter .* i for (i,filter) in enumerate(layer_filters), dims=2)
+
+    if plot
+        map_layer_assignment(atom_positions, layer_assignments)
+    end
+    layer_assignments
 end

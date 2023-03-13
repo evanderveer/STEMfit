@@ -127,3 +127,109 @@ function plot_unit_cells( #Very ugly --> refactor
          )
     display(r)
 end
+
+function plot_histogram(
+    data::AbstractMatrix{<:AbstractFloat};
+    xlabel
+)
+    xlim = percentile([data[1,:]; data[2,:]], [5,95]) 
+    xrange = abs(-(xlim...))
+    xlim = xlim .+ (-xrange, xrange) .* 0.5
+    bins=xlim[1]:(xlim[2]-xlim[1])/250:xlim[2]
+
+    p = histogram(data[1,:], 
+                xlim=xlim, 
+                bins=bins, 
+                alpha=0.8,
+                linewidth=0,
+                label="Basis vector 1", 
+                xlabel=xlabel,
+                ylabel="Count")
+    histogram!(p, data[2,:], 
+                bins=bins, 
+                alpha=0.8,
+                linewidth=0,
+                label="Basis vector 2")
+    display(p)
+end
+
+function map_layer_assignment(
+        atom_positions, 
+        layer_assignment;
+        markersize=2)
+    p = scatter(atom_positions[2, :],
+                -atom_positions[1, :],
+                marker_z=layer_assignment,
+                size=(500,500),
+                markerstrokewidth=0,
+                markersize=markersize,
+                xlabel="x (nm)",
+                ylabel="y (nm)",
+                title="Layer assignments",
+                label=false,
+                c=cgrad(:inferno),
+                legend=false
+                )
+    display(p)
+end
+
+function map_lattice_parameter(
+    atom_positions,
+    lattice_parameters;
+    markersize = 2,
+    title = "lattice parameter"
+)
+
+    clim = percentile(lattice_parameters[1,:], [5,95]) 
+    crange = abs(-(clim...))
+    clim = clim .+ (-crange, crange) .* 0.5
+
+    p = scatter(atom_positions[2, :],
+                -atom_positions[1, :],
+                marker_z=lattice_parameters[1, :],
+                size=(600,600),
+                markerstrokewidth=0,
+                markersize=markersize,
+                clims=Tuple(clim),
+                xlabel="x (nm)",
+                ylabel="y (nm)",
+                title="Vector 1 "*title,
+                label=false,
+                c=cgrad(:inferno)
+                )  
+                
+    clim = percentile(lattice_parameters[2,:], [5,95]) 
+    crange = abs(-(clim...))
+    clim = clim .+ (-crange, crange) .* 0.5
+
+    q = scatter(atom_positions[2, :],
+                -atom_positions[1, :],
+                marker_z=lattice_parameters[2, :],
+                size=(600,600),
+                markerstrokewidth=0,
+                markersize=markersize,
+                clims=Tuple(clim),
+                xlabel="x (nm)",
+                ylabel="y (nm)",
+                title="Vector 2 "*title,
+                label=false,
+                c=cgrad(:inferno)
+                )   
+    r = plot(p,q, size=(1200,450))
+    display(r)
+end
+
+function map_strain(
+    atom_positions,
+    strain;
+    kwargs...
+)
+
+    map_lattice_parameter(
+        atom_positions,
+        strain,
+        title="strain";
+        kwargs...
+    )
+
+end

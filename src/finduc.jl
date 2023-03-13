@@ -322,7 +322,7 @@ end
 
 """Calculate the angle (0-360deg) of a vector wrt the vector [1,0]."""
 function uc_angle(basis_vector::AbstractVector{<:Real})
-    (y,x) = Float32.(basis_vector)
+    (y,x) = basis_vector
     if x == 0f0 || y == 0f0
         return 0f0
     elseif x<0f0 && y<0f0
@@ -330,7 +330,7 @@ function uc_angle(basis_vector::AbstractVector{<:Real})
     elseif x<0f0 && y>0f0
         return 360f0 + atand(x/y)
     elseif x>0f0 && y<0f0
-        return 90 + atand(-x/y)
+        return 90 + atand(-y/x)
     elseif x>0f0 && y>0f0
         return atand(x/y)
     end

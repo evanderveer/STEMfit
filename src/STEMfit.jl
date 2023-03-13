@@ -41,7 +41,8 @@ module STEMfit
     import Statistics:
                     mean
     import StatsBase:
-                    sample
+                    sample,
+                    percentile
     import Distances: 
                     Euclidean, 
                     PeriodicEuclidean, 
@@ -62,7 +63,11 @@ module STEMfit
                     Shape,
                     hline!,
                     vline!,
-                    histogram
+                    histogram,
+                    histogram!,
+                    cgrad,
+                    gui,
+                    display
     using Optimization
     using ForwardDiff
     import ForwardDiff:
