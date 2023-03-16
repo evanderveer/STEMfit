@@ -1,3 +1,11 @@
+#
+#File: background.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions for finding the background contribution in an image.
+#
+
 """
     set_background!(
         model::ImageModel,

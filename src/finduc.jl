@@ -1,3 +1,11 @@
+#
+#File: finduc.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions for finding the unit cell in a matrix of atom positions.
+#
+
 struct UnitCell{T<:Real}
     volume::T
     angle::T

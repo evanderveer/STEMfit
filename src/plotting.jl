@@ -1,3 +1,12 @@
+"""
+File: plotting.jl
+Author: Ewout van der Veer
+
+Description:
+Functions for plotting and saving of results.
+    
+"""
+
 function plot_singular_vectors(
     Σ,
     num_sv;

@@ -1,4 +1,14 @@
 """
+File: latticeparameter.jl
+Author: Ewout van der Veer
+
+Description:
+Functions for calculating the local lattice parameter and strain from 
+atomic positions. 
+    
+"""
+
+"""
     calculate_lattice_parameters(
         positions::AbstractMatrix{T},
         unit_cell::UnitCell[,

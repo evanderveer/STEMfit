@@ -1,4 +1,10 @@
-
+#
+#File: utils.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Miscellaneous utility functions.
+#
 
 """
     load_image(

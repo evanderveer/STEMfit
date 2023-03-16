@@ -1,3 +1,11 @@
+#
+#File: transformation.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions for transforming from px to physical units.
+#
+
 """
     get_pixel_size(
         reference_latt_param::AbstractMatrix{<:Real},

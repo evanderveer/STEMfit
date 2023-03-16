@@ -1,3 +1,11 @@
+#
+#File: gaussianfitting.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions for fitting 2D gaussian functions to an image.
+#
+
 struct GaussianParameters{T,U,V,Y}
     index::Int32
     image_model::ImageModel{T,U,V,Y}

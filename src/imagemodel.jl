@@ -1,3 +1,11 @@
+#
+#File: imagemodel.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions dealing with a model of an atomic resolution TEM image.
+#
+
 mutable struct ImageModel{T<:Real, U<:NNTree, V<:Real, Y<:Real}
     gaussian_parameters::Vector{MVector{6, T}}
     unit_cell::UnitCell{V}

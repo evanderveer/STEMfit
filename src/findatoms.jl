@@ -1,3 +1,11 @@
+#
+#File: findatoms.jl
+#Author: Ewout van der Veer
+#
+#Description:
+#Functions for finding atoms in an image.
+#
+
 """
     find_atoms(
         image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
