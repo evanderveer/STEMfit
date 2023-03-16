@@ -90,19 +90,6 @@ function downscale_image(image::AbstractMatrix{T}, factor::Integer) where T
     new_image
 end
 
-function save_atomic_positions!(
-    filename::String,
-    matrix::AbstractMatrix{<:Real};
-    headers::AbstractVector{<:String}
-)
-    if length(headers) != size(matrix)[2]
-        throw(ArgumentError("Incorrect number of headers."))
-    end
-    f = open(filename, "w")
-    writedlm(f, permutedims(headers), ',')
-    writedlm(f, matrix, ',')
-    close(f)
-end
 
 #Make sure matrices of dual numbers can be displayed as images
 Gray(dual::Dual) = Gray(dual.value)

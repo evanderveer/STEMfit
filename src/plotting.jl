@@ -144,13 +144,16 @@ function plot_histogram(
                 linewidth=0,
                 label="Basis vector 1", 
                 xlabel=xlabel,
-                ylabel="Count")
+                ylabel="Count",
+                dpi=300)
     histogram!(p, data[2,:], 
                 bins=bins, 
                 alpha=0.8,
                 linewidth=0,
-                label="Basis vector 2")
+                label="Basis vector 2",
+                dpi=300)
     display(p)
+    p
 end
 
 function map_layer_assignment(
@@ -168,9 +171,11 @@ function map_layer_assignment(
                 title="Layer assignments",
                 label=false,
                 c=cgrad(:inferno),
-                legend=false
+                legend=false,
+                dpi=300
                 )
     display(p)
+    p
 end
 
 function map_lattice_parameter(
@@ -195,7 +200,8 @@ function map_lattice_parameter(
                 ylabel="y (nm)",
                 title="Vector 1 "*title,
                 label=false,
-                c=cgrad(:inferno)
+                c=cgrad(:inferno),
+                dpi=300
                 )  
                 
     clim = percentile(lattice_parameters[2,:], [5,95]) 
@@ -213,10 +219,12 @@ function map_lattice_parameter(
                 ylabel="y (nm)",
                 title="Vector 2 "*title,
                 label=false,
-                c=cgrad(:inferno)
+                c=cgrad(:inferno),
+                dpi=300
                 )   
-    r = plot(p,q, size=(1200,450))
+    r = plot(p,q, size=(1200,450), dpi=300)
     display(r)
+    (p, q)
 end
 
 function map_strain(
@@ -225,11 +233,48 @@ function map_strain(
     kwargs...
 )
 
-    map_lattice_parameter(
+    (p, q) = map_lattice_parameter(
         atom_positions,
         strain,
         title="strain";
         kwargs...
     )
+    (p, q)
+end
 
+
+function save_atomic_positions(
+    filename::String;
+    atom_parameters::AbstractMatrix{<:Real},
+    lattice_parameters::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
+    strain::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
+    valid_atoms::Union{AbstractVector{Bool}, Nothing} = nothing
+)
+    if all([atom_parameters, lattice_parameters, strain, valid_atoms] .=== nothing)
+        throw(ArgumentError("no data was provided"))
+    end
+
+    sizes = [size(i)[2] for i in [atom_parameters, lattice_parameters, strain] 
+                                if i !== nothing]
+    size_set = valid_atoms === nothing ? Set(sizes) : Set([sizes..., length(valid_atoms)])
+
+    if length(size_set) != 1
+        throw(ArgumentError("all parameters must have the same length"))
+    end
+
+    data_matrix = [["y", "x", "A", "a", "b", "c"] atom_parameters]
+
+    if lattice_parameters !== nothing
+        data_matrix = [data_matrix; ["vector 1 lp", "vector 1 lp"] lattice_parameters]
+    end
+
+    if strain !== nothing
+        data_matrix = [data_matrix; ["vector 1 strain", "vector 1 strain"] strain]
+    end
+
+    if valid_atoms !== nothing
+        data_matrix = data_matrix[:, [true; valid_atoms]]
+    end
+
+    writedlm(filename, permutedims(data_matrix, (2,1)), ',')
 end

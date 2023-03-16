@@ -18,7 +18,7 @@ parameters along the first basis vector, the second row are the lattice paramete
 along the second basis vector. 
 """
 function calculate_lattice_parameters(#TODO: Clean up
-    positions::AbstractMatrix{T},
+    atom_parameters::AbstractMatrix{T},
     unit_cell::UnitCell;
     tolerance::Real = 0.2,
     strictness::Integer = 4
@@ -27,6 +27,9 @@ function calculate_lattice_parameters(#TODO: Clean up
     if strictness > 8 || strictness < 4
         throw(ArgumentError("Strictness must be between 4 and 8"))
     end
+
+    positions = atom_parameters[1:2, :]
+
     vec_1 = unit_cell.vector_1
     vec_2 = unit_cell.vector_2
     inv_matrix = inv([vec_1 vec_2])
@@ -145,10 +148,13 @@ end
     
 """
 function layer_assignments(
-    atom_positions::AbstractMatrix{T}, 
+    atom_parameters::AbstractMatrix{T}, 
     layer_boundaries::AbstractVector;
     plot::Bool = true
     ) where T
+
+    atom_positions = atom_parameters[1:2, :]
+
     layer_boundaries = [zero(T), T.(layer_boundaries)..., maximum(atom_positions[1, :])]
     layer_filters = []
     for boundary in eachindex(layer_boundaries[2:end])
@@ -162,4 +168,26 @@ function layer_assignments(
         map_layer_assignment(atom_positions, layer_assignments)
     end
     layer_assignments
+end
+
+function convert_to_nm(
+    matrix,
+    pixel_sizes
+)
+    #lattice parameter matrix
+    if size(matrix)[1] == 2
+        return matrix .* pixel_sizes
+
+    #atom parameter matrix
+    elseif size(matrix)[1] == 6
+        pixel_size_vector = [pixel_sizes[1], 
+                             pixel_sizes[2], 
+                             1.0, 
+                             pixel_sizes[1], 
+                             1.0, 
+                             pixel_sizes[2]]
+        return matrix .* pixel_size_vector
+    else
+        throw(ArgumentError("unknown matrix type"))
+    end
 end

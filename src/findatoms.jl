@@ -65,7 +65,14 @@ function find_atoms(
         plot_atomic_positions(centroid_matrix[:, size_filter], image)
     end
 
-    (centroid_matrix[:, size_filter], sizes[size_filter], intensities[size_filter], bw_opt)
+    atom_parameters = [centroid_matrix[:, size_filter]; 
+                       intensities[size_filter]';
+                       sizes[size_filter]';
+                       zeros(Float64, length(sizes[size_filter]))';
+                       sizes[size_filter]'
+                       ]
+
+    (atom_parameters, bw_opt)
 end
 
 """

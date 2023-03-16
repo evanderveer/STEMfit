@@ -289,3 +289,15 @@ function optimize_width(
     change_atom_widths!(1/factor[1], p.image_model)
     res
 end
+
+function fitting_parameters(
+    atom_parameters,
+    background_image
+)
+    atom_positions = atom_parameters[1:2, :]
+    atom_intensities = atom_parameters[3, :]
+    atom_widths = atom_parameters[4, :]
+    (a, b, c) = STEMfit.get_initial_gaussian_parameters(atom_widths)
+    A = STEMfit.get_intensity_above_background(atom_positions, atom_intensities, background_image);
+    [atom_positions; A';a';b';c'];
+end
