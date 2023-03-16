@@ -13,7 +13,7 @@ function plot_singular_vectors(
     kwargs...
 )
     max_x = round(Int64, num_sv*2)
-    ylim = round.(Int64, extrema(Σ[1:max_x]) .* (0.5, 2))
+    ylim = extrema(Σ[1:max_x]) .* (0.5, 2)
     p = scatter(Σ, yaxis=:log, 
                    xlim=(0, max_x), 
                    ylim=ylim, 
