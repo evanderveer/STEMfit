@@ -3,7 +3,7 @@
 #Author: Ewout van der Veer
 #
 #Description:
-# Functions for fitting 2D gaussian functions to an image.
+# Functions for fitting 2D gaussians to an image.
 #
 
 struct GaussianParameters{T,U,V,Y}
@@ -197,8 +197,6 @@ function fit!(
     end
 end
 
-
-
 function fit_gaussians(us, ps, optf, n, x_tol)
 
     for i in 1:n
@@ -298,14 +296,3 @@ function optimize_width(
     res
 end
 
-function fitting_parameters(
-    atom_parameters,
-    background_image
-)
-    atom_positions = atom_parameters[1:2, :]
-    atom_intensities = atom_parameters[3, :]
-    atom_widths = atom_parameters[4, :]
-    (a, b, c) = STEMfit.get_initial_gaussian_parameters(atom_widths)
-    A = STEMfit.get_intensity_above_background(atom_positions, atom_intensities, background_image);
-    [atom_positions; A';a';b';c'];
-end

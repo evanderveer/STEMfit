@@ -7,39 +7,6 @@
 #
 
 """
-    set_background!(
-        model::ImageModel,
-        value::Matrix{<:Gray{<:Real}}
-    )
-
-Set the background of *model* to the matrix *value*.
-"""
-function set_background!(
-    model::ImageModel,
-    value::Matrix{<:Gray{<:Real}}
-)
-    if model.model_size != size(value)
-        throw(ArgumentError("The size of the background matrix is not correct."))
-    end
-    model.background = Float32.(value);
-end
-
-"""
-    set_background!(
-        model::ImageModel,
-        value::Real
-    )
-
-Set the background of *model* to the single value *value*.
-"""
-function set_background!(
-    model::ImageModel,
-    value::Real
-)
-    model.background = fill(Float32(value), model.model_size...);
-end
-
-"""
     construct_background(
         image::Matrix{<:Gray{<:AbstractFloat}},
         kernel::Tuple{<:Integer, <:Integer}
@@ -52,7 +19,6 @@ The entries of *kernel* must be odd.
 function construct_background(
     image::Matrix{<:Gray{<:AbstractFloat}},
     kernel::Tuple{<:Integer, <:Integer}
-    
 )
     bck_img = mapwindow(minimum, image, kernel)
     gaussian_kernel = @. Int64(2*floor(kernel/4)+1)

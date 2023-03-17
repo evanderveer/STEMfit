@@ -82,15 +82,14 @@ module STEMfit
     import OffsetArrays:
                     OffsetArray
 
+    include("image.jl")
     include("findatoms.jl")
     include("dbscan.jl")
     include("finduc.jl")
     include("imagemodel.jl")
     include("background.jl")
-    include("transformation.jl")
     include("latticeparameter.jl")
     include("gaussianfitting.jl")
     include("plotting.jl")
-    include("utils.jl")
 
 end

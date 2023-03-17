@@ -156,6 +156,9 @@ end
         layer_boundaries::AbstractVector
     )
     
+Creates a vector of layer indices of each atom in `atom_positions` based on 
+the `layer_boundaries`. Assumes that layer boundaries are horizontal. The values
+in `layer_boundaries` are the y-values of the boundaries in the image.
 """
 function layer_assignments(
     atom_parameters::AbstractMatrix{T}, 
@@ -180,13 +183,22 @@ function layer_assignments(
     layer_assignments
 end
 
+"""
+    function convert_to_nm(
+        matrix::AbstractMatrix{<:Real},
+        pixel_sizes::Tuple{<:Real, <:Real}
+    )
+
+Converts the values in the first two rows of `matrix` from pixel into length
+units using the given `pixel_sizes`.
+"""
 function convert_to_nm(
-    matrix,
-    pixel_sizes
-)
+    matrix::AbstractMatrix{<:Real},
+    pixel_sizes::Tuple{<:Real, <:Real}
+) 
     #lattice parameter matrix
     if size(matrix)[1] == 2
-        return matrix .* pixel_sizes
+        return matrix .* [pixel_sizes...]
 
     #atom parameter matrix
     elseif size(matrix)[1] == 6
@@ -200,4 +212,36 @@ function convert_to_nm(
     else
         throw(ArgumentError("unknown matrix type"))
     end
+end
+
+"""
+    get_pixel_size(
+        reference_latt_param::AbstractMatrix{<:Real},
+        basis_vector_distances::Tuple{<:Real, <:Real}
+    )
+
+Calculates the pixel size based on a known unit cell
+"""
+function get_pixel_size(
+    uc::UnitCell,
+    basis_vector_distances::Tuple{<:Real, <:Real}
+)
+    pixel_distances = norm.((uc.vector_1, uc.vector_2))
+    Tuple(basis_vector_distances ./ pixel_distances)
+end
+
+"""
+    get_pixel_size(
+        reference_latt_param::AbstractMatrix{<:Real},
+        basis_vector_distances::Tuple{<:Real, <:Real}
+    )
+
+Calculates the pixel size based on a reference
+"""
+function get_pixel_size(
+    reference_latt_param::AbstractMatrix{<:Real},
+    basis_vector_distances::Tuple{<:Real, <:Real}
+)
+    pixel_distances = mean(reference_latt_param, dims=2)
+    Tuple(basis_vector_distances ./ pixel_distances)
 end

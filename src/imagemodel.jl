@@ -192,6 +192,18 @@ function get_initial_gaussian_parameters(
     get_initial_gaussian_parameters(σ, σ, zeros(T, length(σ)))
 end
 
+function fitting_parameters(
+    atom_parameters,
+    background_image
+)
+    atom_positions = atom_parameters[1:2, :]
+    atom_intensities = atom_parameters[3, :]
+    atom_widths = atom_parameters[4, :]
+    (a, b, c) = get_initial_gaussian_parameters(atom_widths)
+    A = get_intensity_above_background(atom_positions, atom_intensities, background_image);
+    [atom_positions; A';a';b';c'];
+end
+
 function model_to_matrix(
     model::ImageModel{T,U,V,Y}
 ) where {T,U,V,Y}
