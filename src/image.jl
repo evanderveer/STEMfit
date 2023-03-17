@@ -111,7 +111,7 @@ Makes sure all values of image lie in the range (0,1)
 """
 function stretch_image(image::AbstractMatrix)
     image_extrema = extrema(image)
-    (image .- image_extrema[1]) ./ -(image_extrema)
+    (image .- image_extrema[1]) ./ (image_extrema[2] - image_extrema[1])
 end
 
 """

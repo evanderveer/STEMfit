@@ -151,20 +151,36 @@ function fill_slice_intensity!(
 end
 
 function transform_gaussian_parameters(
-    σ_X::Real,
     σ_Y::Real,
-    θ::Real
+    θ::Real,
+    σ_X::Real    
 )
-    a = cos(θ)^2/(2*σ_X^2) + sin(θ)^2/(2*σ_Y^2)
-    c = sin(θ)^2/(2*σ_X^2) + cos(θ)^2/(2*σ_Y^2)
-    b = -sin(2*θ)/(4*σ_X^2) + sin(2*θ)/(4*σ_Y^2)
+    a = cosd(θ)^2/(2*σ_X^2) + sind(θ)^2/(2*σ_Y^2)
+    c = sind(θ)^2/(2*σ_X^2) + cosd(θ)^2/(2*σ_Y^2)
+    b = -sind(2*θ)/(4*σ_X^2) + sind(2*θ)/(4*σ_Y^2)
     (a, b, c)
 end
 
+function inverse_transform_gaussian_parameters(
+    a::T,
+    b::T,
+    c::T
+) where {T<:Real}
+
+    if a-c == zero(T)
+        θ = 0.0 #degrees
+    else
+        θ = 0.5*atand(2*b/(a-c)) - 90.0
+    end
+    σ_X = sqrt(1/(2*(a*cosd(θ)^2 + 2*b*cosd(θ)*sind(θ) + c*sind(θ)^2)))
+    σ_Y = sqrt(1/(2*(a*sind(θ)^2 - 2*b*cosd(θ)*sind(θ) + c*cosd(θ)^2)))
+    (σ_Y, θ, σ_X)
+end
+
 function get_initial_gaussian_parameters(
-    σ_X::AbstractVector{T},
     σ_Y::AbstractVector{T},
-    θ::AbstractVector{T}
+    θ::AbstractVector{T},
+    σ_X::AbstractVector{T}    
 ) where {T<:Real}
     length(σ_X) == length(σ_Y) == length(θ) || 
             throw(ArgumentError("arguments must have the same length"))
@@ -173,23 +189,23 @@ function get_initial_gaussian_parameters(
     a = Vector{T}(undef, length(θ))
     b = Vector{T}(undef, length(θ))
     c = Vector{T}(undef, length(θ))
-    for (n,(i,j,k)) in enumerate(zip(σ_X,σ_Y,θ))
+    for (n,(i,j,k)) in enumerate(zip(σ_Y, θ, σ_X))
         (a[n], b[n], c[n]) = transform_gaussian_parameters(i,j,k)
     end
     (a, b, c)
 end
 
 function get_initial_gaussian_parameters(
-    σ_X::AbstractVector{T},
-    σ_Y::AbstractVector{T}
+    σ_Y::AbstractVector{T},
+    σ_X::AbstractVector{T}
 ) where {T<:Real}
-    get_initial_gaussian_parameters(σ_X, σ_Y, zeros(T, length(σ_X)))
+    get_initial_gaussian_parameters(σ_Y, zeros(T, length(σ_X)), σ_X)
 end
 
 function get_initial_gaussian_parameters(
     σ::AbstractVector{T}
 ) where {T<:Real}
-    get_initial_gaussian_parameters(σ, σ, zeros(T, length(σ)))
+    get_initial_gaussian_parameters(σ, zeros(T, length(σ)), σ)
 end
 
 function fitting_parameters(
@@ -198,8 +214,10 @@ function fitting_parameters(
 )
     atom_positions = atom_parameters[1:2, :]
     atom_intensities = atom_parameters[3, :]
-    atom_widths = atom_parameters[4, :]
-    (a, b, c) = get_initial_gaussian_parameters(atom_widths)
+    σ_Y = atom_parameters[4, :]
+    θ = atom_parameters[5, :]
+    σ_X = atom_parameters[6, :]
+    (a, b, c) = get_initial_gaussian_parameters(σ_Y, θ, σ_X)
     A = get_intensity_above_background(atom_positions, atom_intensities, background_image);
     [atom_positions; A';a';b';c'];
 end
@@ -217,11 +235,21 @@ end
 
 function save_model(
     model::ImageModel,
-    filename::String
+    filename::String;
+    add_background::Bool = false
     )
     matrix = model_to_matrix(model)
+    (max_y, max_x) = size(model.background)
+    for col in eachcol(matrix)
+        col[4:6] .= inverse_transform_gaussian_parameters(col[4:6]...)
+
+        if add_background
+            position = [clamp(col[1], 1, max_y), clamp(col[2], 1, max_x)]
+            col[3] = col[3] + model.background[round.(Int, position)...]
+        end
+    end
     f = open(filename, "w")
-    writedlm(f, ["y0" "x0" "A" "a" "b" "c"])
-    writedlm(f, matrix')
+    writedlm(f, ["y0" "x0" "A" "σX" "θ" "σY"], ',')
+    writedlm(f, matrix', ',')
     close(f)
 end

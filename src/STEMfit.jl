@@ -54,7 +54,8 @@ module STEMfit
                     MMatrix,
                     SMatrix
     import DelimitedFiles:
-                    writedlm
+                    writedlm,
+                    readdlm
     import Plots:
                     scatter,
                     plot,

@@ -144,6 +144,7 @@ function fit!(
     if preconditioning
         println("Starting preconditioning procedure")
         flush(stdout)
+    
         precondition_atom_widths!(image_model, image)
     end
 

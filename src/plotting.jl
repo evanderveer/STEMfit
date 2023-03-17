@@ -252,7 +252,7 @@ function map_strain(
 end
 
 
-function save_atomic_positions(
+function save_atomic_parameters(
     filename::String;
     atom_parameters::AbstractMatrix{<:Real},
     lattice_parameters::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
@@ -271,7 +271,7 @@ function save_atomic_positions(
         throw(ArgumentError("all parameters must have the same length"))
     end
 
-    data_matrix = [["y", "x", "A", "a", "b", "c"] atom_parameters]
+    data_matrix = [["y0", "x0", "A", "σX", "θ", "σY"] atom_parameters]
 
     if lattice_parameters !== nothing
         data_matrix = [data_matrix; ["vector 1 lp", "vector 1 lp"] lattice_parameters]
@@ -286,4 +286,13 @@ function save_atomic_positions(
     end
 
     writedlm(filename, permutedims(data_matrix, (2,1)), ',')
+end
+
+function load_atomic_parameters(
+    filename::String
+    )
+    raw_data = readdlm(filename, ',')
+    data = Float64.(raw_data[2:end, :])
+
+    permutedims(data[:,1:6], (2,1))
 end

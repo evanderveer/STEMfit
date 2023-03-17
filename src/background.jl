@@ -96,6 +96,7 @@ function get_intensity_above_background(
 )
     A = similar(intensities)
     for (n, (I, pos)) in enumerate(zip(intensities, eachcol(positions)))
+        pos = [clamp(pos[1], 1, size(background)[1]), clamp(pos[2], 1, size(background)[2])]
         bck_intensity = background[round.(Int64, pos)...]
         A[n] = I - bck_intensity
     end
