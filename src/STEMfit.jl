@@ -41,7 +41,8 @@ module STEMfit
     import Statistics:
                     mean
     import StatsBase:
-                    sample
+                    sample,
+                    percentile
     import Distances: 
                     Euclidean, 
                     PeriodicEuclidean, 
@@ -61,7 +62,12 @@ module STEMfit
                     plot!,
                     Shape,
                     hline!,
-                    vline!
+                    vline!,
+                    histogram,
+                    histogram!,
+                    cgrad,
+                    gui,
+                    display
     using Optimization
     using ForwardDiff
     import ForwardDiff:
@@ -76,14 +82,14 @@ module STEMfit
     import OffsetArrays:
                     OffsetArray
 
+    include("image.jl")
     include("findatoms.jl")
     include("dbscan.jl")
     include("finduc.jl")
     include("imagemodel.jl")
     include("background.jl")
-    include("transformation.jl")
     include("latticeparameter.jl")
     include("gaussianfitting.jl")
-    include("utils.jl")
+    include("plotting.jl")
 
 end

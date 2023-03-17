@@ -1,3 +1,11 @@
+#
+#File: gaussianfitting.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions for fitting 2D gaussians to an image.
+#
+
 struct GaussianParameters{T,U,V,Y}
     index::Int32
     image_model::ImageModel{T,U,V,Y}
@@ -189,8 +197,6 @@ function fit!(
     end
 end
 
-
-
 function fit_gaussians(us, ps, optf, n, x_tol)
 
     for i in 1:n
@@ -289,3 +295,4 @@ function optimize_width(
     change_atom_widths!(1/factor[1], p.image_model)
     res
 end
+

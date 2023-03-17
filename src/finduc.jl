@@ -1,3 +1,11 @@
+#
+#File: finduc.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions for finding the unit cell in a matrix of atom positions.
+#
+
 struct UnitCell{T<:Real}
     volume::T
     angle::T
@@ -21,7 +29,10 @@ UnitCell(volume,
                     uc_allowed_areas::UnitRange{<:Real} = 10:Inf,
                     uc_allowed_angles::UnitRange{<:Real} = 5:360,
                     min_neighbor_dist::Real = 5,
-                    filter_tolerance::Real = 10
+                    filter_tolerance::Real = 10,
+                    use_all_atoms::Bool = false,
+                    plot::Bool = true,
+                    uc_to_plot::UnitRange = 1:8
                     ])
                     -> Tuple{Matrix{Any}, Matrix{<:AbstractFloat}, KDTree}
 
@@ -43,9 +54,11 @@ to `true`. This may incur very long compute times.
 - `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
 - `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
 - `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
+- `plot::Bool = true`: Determines whether unit cells are plotted 
+- `uc_to_plot::UnitRange = 1:8`: Determines how many unit cells to plot 
 """
 function find_unit_cells(
-    centroids::Matrix{<:Real};
+    atom_parameters::AbstractMatrix{<:Real};
     num_nn::Integer = 20,
     cluster_radius::Union{<:Real, Symbol} = :auto,
     min_cluster_size::Union{<:Integer, Symbol} = :auto,
@@ -53,8 +66,12 @@ function find_unit_cells(
     uc_allowed_angles::UnitRange{<:Real} = 5:360,
     min_neighbor_dist::Union{<:Real, Symbol} = :auto,
     filter_tolerance::Real = 0.1,
-    use_all_atoms::Bool = false
+    use_all_atoms::Bool = false,
+    plot::Bool = true,
+    uc_to_plot::UnitRange = 1:8
 )
+
+    centroids = atom_parameters[1:2, :]
 
     #Find nearest neighbors for all atoms in centroids
     (neighbors_full, atom_tree, distance_measure, mcs) = find_neighbors(centroids, 
@@ -86,6 +103,10 @@ function find_unit_cells(
                                 uc_allowed_areas=uc_allowed_areas,
                                 tolerance=filter_tolerance
                                 )
+
+    if plot
+        plot_unit_cells(sorted_uc[uc_to_plot], neighbors)
+    end
 
     return (sorted_uc, neighbors, atom_tree)
 end
@@ -311,7 +332,7 @@ end
 
 """Calculate the angle (0-360deg) of a vector wrt the vector [1,0]."""
 function uc_angle(basis_vector::AbstractVector{<:Real})
-    (y,x) = Float32.(basis_vector)
+    (y,x) = basis_vector
     if x == 0f0 || y == 0f0
         return 0f0
     elseif x<0f0 && y<0f0
@@ -319,7 +340,7 @@ function uc_angle(basis_vector::AbstractVector{<:Real})
     elseif x<0f0 && y>0f0
         return 360f0 + atand(x/y)
     elseif x>0f0 && y<0f0
-        return 90 + atand(-x/y)
+        return 90 + atand(-y/x)
     elseif x>0f0 && y>0f0
         return atand(x/y)
     end

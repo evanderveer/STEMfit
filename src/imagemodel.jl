@@ -1,3 +1,11 @@
+#
+#File: imagemodel.jl
+#Author: Ewout van der Veer
+#
+#Description:
+# Functions dealing with a model of an atomic resolution TEM image.
+#
+
 mutable struct ImageModel{T<:Real, U<:NNTree, V<:Real, Y<:Real}
     gaussian_parameters::Vector{MVector{6, T}}
     unit_cell::UnitCell{V}
@@ -182,6 +190,18 @@ function get_initial_gaussian_parameters(
     σ::AbstractVector{T}
 ) where {T<:Real}
     get_initial_gaussian_parameters(σ, σ, zeros(T, length(σ)))
+end
+
+function fitting_parameters(
+    atom_parameters,
+    background_image
+)
+    atom_positions = atom_parameters[1:2, :]
+    atom_intensities = atom_parameters[3, :]
+    atom_widths = atom_parameters[4, :]
+    (a, b, c) = get_initial_gaussian_parameters(atom_widths)
+    A = get_intensity_above_background(atom_positions, atom_intensities, background_image);
+    [atom_positions; A';a';b';c'];
 end
 
 function model_to_matrix(

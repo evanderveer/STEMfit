@@ -1,4 +1,14 @@
 """
+File: latticeparameter.jl
+Author: Ewout van der Veer
+
+Description:
+Functions for calculating the local lattice parameter and strain from 
+atomic positions. 
+    
+"""
+
+"""
     calculate_lattice_parameters(
         positions::AbstractMatrix{T},
         unit_cell::UnitCell[,
@@ -18,7 +28,7 @@ parameters along the first basis vector, the second row are the lattice paramete
 along the second basis vector. 
 """
 function calculate_lattice_parameters(#TODO: Clean up
-    positions::AbstractMatrix{T},
+    atom_parameters::AbstractMatrix{T},
     unit_cell::UnitCell;
     tolerance::Real = 0.2,
     strictness::Integer = 4
@@ -27,6 +37,9 @@ function calculate_lattice_parameters(#TODO: Clean up
     if strictness > 8 || strictness < 4
         throw(ArgumentError("Strictness must be between 4 and 8"))
     end
+
+    positions = atom_parameters[1:2, :]
+
     vec_1 = unit_cell.vector_1
     vec_2 = unit_cell.vector_2
     inv_matrix = inv([vec_1 vec_2])
@@ -143,11 +156,18 @@ end
         layer_boundaries::AbstractVector
     )
     
+Creates a vector of layer indices of each atom in `atom_positions` based on 
+the `layer_boundaries`. Assumes that layer boundaries are horizontal. The values
+in `layer_boundaries` are the y-values of the boundaries in the image.
 """
 function layer_assignments(
-    atom_positions::AbstractMatrix{T}, 
-    layer_boundaries::AbstractVector
+    atom_parameters::AbstractMatrix{T}, 
+    layer_boundaries::AbstractVector;
+    plot::Bool = true
     ) where T
+
+    atom_positions = atom_parameters[1:2, :]
+
     layer_boundaries = [zero(T), T.(layer_boundaries)..., maximum(atom_positions[1, :])]
     layer_filters = []
     for boundary in eachindex(layer_boundaries[2:end])
@@ -155,5 +175,73 @@ function layer_assignments(
                              atom_positions[1, :] .<= 
                              layer_boundaries[boundary+1]) 
     end
-    sum(filter .* i for (i,filter) in enumerate(layer_filters), dims=2)
+    layer_assignments = sum(filter .* i for (i,filter) in enumerate(layer_filters), dims=2)
+
+    if plot
+        map_layer_assignment(atom_positions, layer_assignments)
+    end
+    layer_assignments
+end
+
+"""
+    function convert_to_nm(
+        matrix::AbstractMatrix{<:Real},
+        pixel_sizes::Tuple{<:Real, <:Real}
+    )
+
+Converts the values in the first two rows of `matrix` from pixel into length
+units using the given `pixel_sizes`.
+"""
+function convert_to_nm(
+    matrix::AbstractMatrix{<:Real},
+    pixel_sizes::Tuple{<:Real, <:Real}
+) 
+    #lattice parameter matrix
+    if size(matrix)[1] == 2
+        return matrix .* [pixel_sizes...]
+
+    #atom parameter matrix
+    elseif size(matrix)[1] == 6
+        pixel_size_vector = [pixel_sizes[1], 
+                             pixel_sizes[2], 
+                             1.0, 
+                             pixel_sizes[1], 
+                             1.0, 
+                             pixel_sizes[2]]
+        return matrix .* pixel_size_vector
+    else
+        throw(ArgumentError("unknown matrix type"))
+    end
+end
+
+"""
+    get_pixel_size(
+        reference_latt_param::AbstractMatrix{<:Real},
+        basis_vector_distances::Tuple{<:Real, <:Real}
+    )
+
+Calculates the pixel size based on a known unit cell
+"""
+function get_pixel_size(
+    uc::UnitCell,
+    basis_vector_distances::Tuple{<:Real, <:Real}
+)
+    pixel_distances = norm.((uc.vector_1, uc.vector_2))
+    Tuple(basis_vector_distances ./ pixel_distances)
+end
+
+"""
+    get_pixel_size(
+        reference_latt_param::AbstractMatrix{<:Real},
+        basis_vector_distances::Tuple{<:Real, <:Real}
+    )
+
+Calculates the pixel size based on a reference
+"""
+function get_pixel_size(
+    reference_latt_param::AbstractMatrix{<:Real},
+    basis_vector_distances::Tuple{<:Real, <:Real}
+)
+    pixel_distances = mean(reference_latt_param, dims=2)
+    Tuple(basis_vector_distances ./ pixel_distances)
 end
