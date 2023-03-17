@@ -67,7 +67,8 @@ module STEMfit
                     histogram!,
                     cgrad,
                     gui,
-                    display
+                    display,
+                    savefig
     using Optimization
     using ForwardDiff
     import ForwardDiff:
