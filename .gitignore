@@ -27,8 +27,3 @@ Manifest.toml
 *.db
 
 .vscode/
-src/new_features/
-test/
-deprecated/
-examples/STEMfit-example copy.ipynb
-examples/valim.png
