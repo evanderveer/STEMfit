@@ -263,7 +263,7 @@ function save_atomic_parameters(
         throw(ArgumentError("no data was provided"))
     end
 
-    sizes = [size(i)[2] for i in [atom_parameters, lattice_parameters, strain] 
+    sizes = [size(i, 2) for i in [atom_parameters, lattice_parameters, strain] 
                                 if i !== nothing]
     size_set = valid_atoms === nothing ? Set(sizes) : Set([sizes..., length(valid_atoms)])
 
@@ -271,7 +271,11 @@ function save_atomic_parameters(
         throw(ArgumentError("all parameters must have the same length"))
     end
 
-    data_matrix = [["y0", "x0", "A", "σX", "θ", "σY"] atom_parameters]
+    if size(atom_parameters, 1) == 6
+        data_matrix = [["y0", "x0", "A", "σX", "θ", "σY"] atom_parameters]
+    elseif size(atom_parameters, 1) == 2
+        data_matrix = [["y0", "x0"] atom_parameters]
+    end
 
     if lattice_parameters !== nothing
         data_matrix = [data_matrix; ["vector 1 lp", "vector 1 lp"] lattice_parameters]
