@@ -20,3 +20,7 @@ or
 ```
 using Pkg; Pkg.add("https://github.com/evanderveer/STEMfit/")
 ```
+
+## Questions & Comments
+
+This is an early release of STEMfit. If you have any questions about the use of STEMfit or you find bugs, please file an issue on GitHub or contact me at ewout.van.der.veer@rug.nl.
