@@ -23,9 +23,9 @@ function load_image(
 
     img = load(filename)
     if downscale_factor === nothing
-        return Gray{Float64}.(img)
+        return stretch_image(Gray{Float64}.(img)) .* 0.9
     end
-    downscale_image(Gray{Float64}.(img), downscale_factor)
+    stretch_image(downscale_image(Gray{Float64}.(img), downscale_factor)) .* 0.9
 end
 
 """
