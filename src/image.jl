@@ -22,15 +22,6 @@ function load_image(
                    )
 
     img = load(filename)
-    if typeof(img) != Matrix{Gray{N0f8}} && convert == false 
-        throw(ErrorException("Only 8-bit grayscale images are supported. 
-Convert the image to 8-bit before importing. 
-Alternatively, set convert=true to convert automatically. 
-Use at your own peril!"))
-    end
-    if convert
-        img = Matrix{Gray{N0f8}}(img)
-    end
     if downscale_factor === nothing
         return Gray{Float64}.(img)
     end
