@@ -58,7 +58,7 @@ to `true`. This may incur very long compute times.
 - `uc_to_plot::UnitRange = 1:8`: Determines how many unit cells to plot 
 """
 function find_unit_cells(
-    atom_parameters::AbstractMatrix{<:Real};
+    atom_parameters::AtomParameters;
     num_nn::Integer = 20,
     cluster_radius::Union{<:Real, Symbol} = :auto,
     min_cluster_size::Union{<:Integer, Symbol} = :auto,
@@ -71,7 +71,7 @@ function find_unit_cells(
     uc_to_plot::UnitRange = 1:8
 )
 
-    centroids = atom_parameters[1:2, :]
+    centroids = atom_parameters.centroids
 
     #Find nearest neighbors for all atoms in centroids
     (neighbors_full, atom_tree, distance_measure, mcs) = find_neighbors(centroids, 

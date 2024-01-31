@@ -18,10 +18,10 @@ end
 
 
 function get_valid_range(
-    center::Tuple,
-    image_size::Tuple,
+    center::Tuple{<:Real, <:Real},
+    image_size::Tuple{<:Real, <:Real},
     window_size::Real
-)
+) :: Tuple{UnitRange{Int}, UnitRange{Int}}
 
     center_rounded = round.(Int32, center)
     window_size_rounded = round(Int32, window_size)

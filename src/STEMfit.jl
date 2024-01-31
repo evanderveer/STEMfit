@@ -34,7 +34,12 @@ module STEMfit
                     norm,
                     cholesky,
                     Hermitian,
-                    isposdef
+                    isposdef,
+                    diagm,
+                    transpose,
+                    eigvals,
+                    eigvecs,
+                    Symmetric
     import Combinatorics:
                     combinations,
                     sortperm
@@ -69,7 +74,8 @@ module STEMfit
                     cgrad,
                     gui,
                     display,
-                    savefig
+                    savefig, 
+                    PlotUtils
     using Optimization
     using ForwardDiff
     import ForwardDiff:
@@ -93,5 +99,7 @@ module STEMfit
     include("latticeparameter.jl")
     include("gaussianfitting.jl")
     include("plotting.jl")
+    include("mapping.jl")
+    include("fileio.jl")
 
 end

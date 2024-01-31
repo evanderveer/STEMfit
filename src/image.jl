@@ -9,23 +9,24 @@
 """
     load_image(
         filename::String;
-        convert::Bool = true
     )
     -> Matrix{<:Gray{Float32}}
 
-Load an image from a file. Optionally convert into the right format.    
+Load an image from a file.    
 """
 function load_image(
                     filename::String;
-                    convert::Bool = false,
                     downscale_factor::Union{<:Integer, Nothing} = nothing
                    )
-
-    img = load(filename)
-    if downscale_factor === nothing
-        return stretch_image(Gray{Float64}.(img)) .* 0.9
+    extension = splitext(filename)[2]
+    if !(lowercase(extension) ∈ [".png", ".tif", ".tiff"])
+        throw(ErrorException("only .png and .tif files are supported"))
     end
-    stretch_image(downscale_image(Gray{Float64}.(img), downscale_factor)) .* 0.9
+    img = Gray{Float64}.(load(filename))
+    if downscale_factor === nothing
+        return img
+    end
+    downscale_image(img, downscale_factor)
 end
 
 """

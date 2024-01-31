@@ -8,6 +8,41 @@ atomic positions.
     
 """
 
+mutable struct Results{T<:Real}
+    atom_parameters::AtomParameters{T}
+    unit_cell::UnitCell
+    lattice_parameters::Matrix{T}
+    valid_atoms::BitVector
+    strain::Union{Matrix{T}, Nothing}
+    polarization::Union{Matrix{T}, Nothing}
+    pixel_sizes::Union{Tuple{Real, Real}, Nothing}
+end
+
+function Results(
+    atom_parameters::AtomParameters{T},
+    unit_cell::UnitCell,
+    lattice_parameters::Matrix{T},
+    valid_atoms::BitVector;
+    strain::Union{Matrix{T}, Nothing} = nothing,
+    polarization::Union{Matrix{T}, Nothing} = nothing,
+    pixel_sizes::Union{Tuple{Real, Real}, Nothing} = nothing
+) where T<:Real
+    if size(atom_parameters.centroids, 2) != size(lattice_parameters, 2)
+        error("Number of atoms not equal to number of lattice parameter values")
+    end
+    if length(valid_atoms) != size(lattice_parameters, 2)
+        error("Number of atoms validity labels not equal to number of lattice parameter values")
+    end
+    if !(isnothing(strain)) && size(strain, 2) != size(lattice_parameters, 2)
+        error("Number of strain values not equal to number of lattice parameter values")
+    end
+    if !(isnothing(polarization)) && size(polarization, 2) != size(lattice_parameters, 2)
+        error("Number of polarization values not equal to number of lattice parameter values")
+    end
+
+    Results(atom_parameters, unit_cell, lattice_parameters, valid_atoms, strain, polarization, pixel_sizes)
+end
+
 """
     calculate_lattice_parameters(
         positions::AbstractMatrix{T},
@@ -28,7 +63,7 @@ parameters along the first basis vector, the second row are the lattice paramete
 along the second basis vector. 
 """
 function calculate_lattice_parameters(#TODO: Clean up
-    atom_parameters::AbstractMatrix{T},
+    atom_parameters::AtomParameters{T},
     unit_cell::UnitCell;
     tolerance::Real = 0.2,
     strictness::Integer = 4
@@ -38,7 +73,7 @@ function calculate_lattice_parameters(#TODO: Clean up
         throw(ArgumentError("Strictness must be between 4 and 8"))
     end
 
-    positions = atom_parameters[1:2, :]
+    positions = atom_parameters.centroids
 
     vec_1 = unit_cell.vector_1
     vec_2 = unit_cell.vector_2
@@ -75,12 +110,13 @@ function calculate_lattice_parameters(#TODO: Clean up
         end
     end
     #Transform back
-    abs.(norm.([vec_1, vec_2]) .* latt_param_matrix)
+    lattice_parameters = abs.(norm.([vec_1, vec_2]) .* latt_param_matrix)
+    valid_atom_labels = valid_lattice_parameter_filter(lattice_parameters) 
+
+    Results(atom_parameters, unit_cell, lattice_parameters, valid_atom_labels)
 end
 
-function valid_lattice_parameter_filter(lattice_parameters) 
-    (sum(lattice_parameters, dims=1) .!= 0)[1,:]
-end
+valid_lattice_parameter_filter(lattice_parameters) = (sum(lattice_parameters, dims=1) .!= 0)[1,:]
 
 """
     plot_image_with_grid(
@@ -122,7 +158,7 @@ the bulk lattice_parameters `bulk_lattice_parameter_dict` and layer assignments.
 in `layer_assignments` and whose values are tuples of bulk lattice parameters in the same
 directions as the two rows of `lattice_parameters`.
 """
-function get_strain_from_lattice_parameters(
+function get_strain_from_lattice_parameters(#TODO: Make it work with Results struct
     lattice_parameters::AbstractMatrix{T},
     bulk_lattice_parameter_dict::Dict{<:Integer, <:Tuple},
     layer_assignments::AbstractVector{<:Integer}    
@@ -160,13 +196,13 @@ Creates a vector of layer indices of each atom in `atom_positions` based on
 the `layer_boundaries`. Assumes that layer boundaries are horizontal. The values
 in `layer_boundaries` are the y-values of the boundaries in the image.
 """
-function layer_assignments(
-    atom_parameters::AbstractMatrix{T}, 
+function layer_assignments(#TODO: Make it work with Results struct
+    atom_parameters::AtomParameters{T}, 
     layer_boundaries::AbstractVector;
     plot::Bool = true
     ) where T
 
-    atom_positions = atom_parameters[1:2, :]
+    atom_positions = atom_parameters.centroids
 
     layer_boundaries = [zero(T), T.(layer_boundaries)..., maximum(atom_positions[1, :])]
     layer_filters = []
@@ -181,37 +217,6 @@ function layer_assignments(
         map_layer_assignment(atom_positions, layer_assignments)
     end
     layer_assignments
-end
-
-"""
-    function convert_to_nm(
-        matrix::AbstractMatrix{<:Real},
-        pixel_sizes::Tuple{<:Real, <:Real}
-    )
-
-Converts the values in the first two rows of `matrix` from pixel into length
-units using the given `pixel_sizes`.
-"""
-function convert_to_nm(
-    matrix::AbstractMatrix{<:Real},
-    pixel_sizes::Tuple{<:Real, <:Real}
-) 
-    #lattice parameter matrix
-    if size(matrix)[1] == 2
-        return matrix .* [pixel_sizes...]
-
-    #atom parameter matrix
-    elseif size(matrix)[1] == 6
-        pixel_size_vector = [pixel_sizes[1], 
-                             pixel_sizes[2], 
-                             1.0, 
-                             pixel_sizes[1], 
-                             1.0, 
-                             pixel_sizes[2]]
-        return matrix .* pixel_size_vector
-    else
-        throw(ArgumentError("unknown matrix type"))
-    end
 end
 
 """
@@ -238,10 +243,18 @@ end
 
 Calculates the pixel size based on a reference
 """
-function get_pixel_size(
-    reference_latt_param::AbstractMatrix{<:Real},
-    basis_vector_distances::Tuple{<:Real, <:Real}
+function add_pixel_size(
+    results::Results,
+    range_y::Union{UnitRange, StepRangeLen},
+    range_x::Union{UnitRange, StepRangeLen},
+    known_lattice_parameters::Tuple{Real, Real}
 )
-    pixel_distances = mean(reference_latt_param, dims=2)
-    Tuple(basis_vector_distances ./ pixel_distances)
+    reference_filter = isinrange.(results.atom_parameters.centroids[1,:], Ref(range_y)) .&& 
+                       isinrange.(results.atom_parameters.centroids[2,:], Ref(range_x)) .&& 
+                       results.valid_atoms
+    reference_lattice_parameters = results.lattice_parameters[:, reference_filter]
+    pixel_distances = mean(reference_lattice_parameters, dims=2)
+    results.pixel_sizes = Tuple(known_lattice_parameters ./ pixel_distances)
 end
+
+isinrange(value, range) = minimum(range) < value < maximum(range)
