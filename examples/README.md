@@ -1,3 +1,3 @@
 # `STEMfit` examples
 
-This folder contains three Jupyter notebooks demonstrating the use of `STEMfit` on a real-world STEM image (`image.tif`). The first is `Center of Mass.ipynb` which uses `STEMfit` it its 'center of mass' mode, the second is `Gaussian fitting.ipynb` which uses the 'Gaussian fitting' mode and the third is `Processing results.ipynb` in which the results of the other two notebooks are processed into nice plots. 
+This folder contains three Jupyter notebooks demonstrating the use of `STEMfit` on a real-world STEM image (`image.tif`).
