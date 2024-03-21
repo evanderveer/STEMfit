@@ -7,7 +7,9 @@ Functions for plotting and saving of results.
     
 """
 
-function get_ellipticities(results::Results)
+function get_ellipticities(
+    results::Results
+    )
     ratios = []
     for size in eachcol(results.atom_parameters.sizes)
         if size[1]>size[2]
@@ -19,14 +21,12 @@ function get_ellipticities(results::Results)
     ratios
 end
 
-
-
 function lattice_parameter_histogram(
     results::Results;
     use_nm_units::Bool = true,
     x_limits::Union{Tuple{Real, Real}, Nothing} = nothing,
     kwargs...
-)
+    )
     data = results.lattice_parameters[:, results.valid_atoms]
     
     if use_nm_units
@@ -61,21 +61,19 @@ function lattice_parameter_histogram(
     p
 end
 
-
-
 """
     function convert_to_nm(
         matrix::AbstractMatrix{<:Real},
         pixel_sizes::Tuple{<:Real, <:Real}
     )
 
-Converts the values in the first two rows of `matrix` from pixel into length
-units using the given `pixel_sizes`.
+    Converts the values in the first two rows of `matrix` from pixel into length
+    units using the given `pixel_sizes`.
 """
 function convert_to_nm(
     atom_parameters::AtomParameters,
     pixel_sizes::Tuple{<:Real, <:Real}
-) 
+    ) 
     atom_parameters.centroids .*= [pixel_sizes...]
     atom_parameters.sizes .*= [pixel_sizes...]
 end
@@ -83,7 +81,7 @@ end
 function convert_to_nm(
     matrix::AbstractMatrix{<:Real},
     pixel_sizes::Tuple{<:Real, <:Real}
-) 
+    ) 
     matrix .* [pixel_sizes...]
 end
 

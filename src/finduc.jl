@@ -36,26 +36,26 @@ UnitCell(volume,
                     ])
                     -> Tuple{Matrix{Any}, Matrix{<:AbstractFloat}, KDTree}
 
-Find unit cells from nearest neighbors. 
+    Find unit cells from nearest neighbors. 
 
-Calculates `num_nn` nearest neighbors for each centroid in `centroids`, then clusters these
-using a DBSCAN clustering algorithm. The potential unit cells are filtered using the 
-`uc_allowed_angles` and `uc_allowed_areas` parameters. By default, a subset of 1000 atomic 
-positions are chosen at random to find the unit cells. To use all atoms, set `use_all_atoms`
-to `true`. This may incur very long compute times.
+    Calculates `num_nn` nearest neighbors for each centroid in `centroids`, then clusters these
+    using a DBSCAN clustering algorithm. The potential unit cells are filtered using the 
+    `uc_allowed_angles` and `uc_allowed_areas` parameters. By default, a subset of 1000 atomic 
+    positions are chosen at random to find the unit cells. To use all atoms, set `use_all_atoms`
+    to `true`. This may incur very long compute times.
 
-# Arguments
-- `centroids::Matrix{<:Real}`: Matrix of centroids to find a unit cell of
-- `num_nn::Integer = 40`: Number of nearest neighbors to find for each centroid
-- `cluster_radius::Real = 0.05`: *radius* parameter used by DBSCAN
-- `min_cluster_size::Integer = 1000`: *min_cluster_size* parameter used by DBSCAN
-- `uc_allowed_areas::Tuple{Real, Real} = (10, Inf)`: Range of allowed unit cell areas
-- `uc_allowed_angles::Tuple{Real, Real} = (85, 95)`: Range of allowed unit cell uc_angles
-- `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
-- `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
-- `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
-- `plot::Bool = true`: Determines whether unit cells are plotted 
-- `uc_to_plot::UnitRange = 1:8`: Determines how many unit cells to plot 
+    # Arguments
+    - `centroids::Matrix{<:Real}`: Matrix of centroids to find a unit cell of
+    - `num_nn::Integer = 40`: Number of nearest neighbors to find for each centroid
+    - `cluster_radius::Real = 0.05`: *radius* parameter used by DBSCAN
+    - `min_cluster_size::Integer = 1000`: *min_cluster_size* parameter used by DBSCAN
+    - `uc_allowed_areas::Tuple{Real, Real} = (10, Inf)`: Range of allowed unit cell areas
+    - `uc_allowed_angles::Tuple{Real, Real} = (85, 95)`: Range of allowed unit cell uc_angles
+    - `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
+    - `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
+    - `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
+    - `plot::Bool = true`: Determines whether unit cells are plotted 
+    - `uc_to_plot::UnitRange = 1:8`: Determines how many unit cells to plot 
 """
 function find_unit_cells(
     atom_parameters::AtomParameters;
@@ -115,10 +115,10 @@ end
     find_neighbors(centroids::Matrix{<:AbstractFloat}[,num_neighbors::Integer])
         -> Tuple{Matrix{Float32}, KDTree}
 
-Find relative positions of the num_neighbors nearest neighbors 
-for each cluster in centroids.
+    Find relative positions of the num_neighbors nearest neighbors 
+    for each cluster in centroids.
 
-The relative positions are rounded to the nearest integer.
+    The relative positions are rounded to the nearest integer.
 """
 function find_neighbors(
     centroids::AbstractMatrix{T},
@@ -164,11 +164,11 @@ end
                            ) 
                            -> Matrix{<:AbstractFloat}
 
-Finds clusters in a matrix of nearest neighbors using DBSCAN clustering.
+    Finds clusters in a matrix of nearest neighbors using DBSCAN clustering.
 
-`radius` and `min_cluster_size` are parameters used by DBSCAN, 
-see the Clustering.jl documentation. Clusters closer than `min_neighbor_dist`
- are removed from the set of clusters.
+    `radius` and `min_cluster_size` are parameters used by DBSCAN, 
+    see the Clustering.jl documentation. Clusters closer than `min_neighbor_dist`
+    are removed from the set of clusters.
 
 """
 function find_neighbor_clusters(
@@ -207,14 +207,14 @@ end
                         )
                         -> Matrix{Any}
 
-Find all possible unit cells from a matrix of nearest neighbor positions. 
+    Find all possible unit cells from a matrix of nearest neighbor positions. 
 
-Only return unit cells with a size in `uc_allowed_areas` and an angle
-in `uc_allowed_angles`. Unit cells whose angle or area is within `tolerance`
-of another unit cell are filtered out. Unit cells are returned sorted from 
-smallest to largest. 
-Returns a matrix with columns of unit cell area, angle and basis vectors.
-Basis vectors are ordered such that the most in-plane vector always comes first.
+    Only return unit cells with a size in `uc_allowed_areas` and an angle
+    in `uc_allowed_angles`. Unit cells whose angle or area is within `tolerance`
+    of another unit cell are filtered out. Unit cells are returned sorted from 
+    smallest to largest. 
+    Returns a matrix with columns of unit cell area, angle and basis vectors.
+    Basis vectors are ordered such that the most in-plane vector always comes first.
 """
 function unit_cells_from_nn(
     neighbors::AbstractMatrix{<:AbstractFloat};
@@ -270,9 +270,9 @@ end
                         tolerance::Real
     )
 
-Takes a sorted matrix of unit cells and filters out unit cells which 
-have an angle or area is within `tolerance` of another unit cell in 
-the list. `tolerance` is the relative difference between unit cells.  
+    Takes a sorted matrix of unit cells and filters out unit cells which 
+    have an angle or area is within `tolerance` of another unit cell in 
+    the list. `tolerance` is the relative difference between unit cells.  
 """
 function filter_unit_cells(
     unit_cells::AbstractMatrix,
@@ -297,7 +297,7 @@ end
                 angle::Real
     )
 
-Calculates the angular distance of `angle` to the in-plane direction   
+    Calculates the angular distance of `angle` to the in-plane direction   
 """
 dist_to_ip(angle::Real) = minimum([abs(angle-270), abs(angle-90)])
 
@@ -306,7 +306,7 @@ dist_to_ip(angle::Real) = minimum([abs(angle-270), abs(angle-90)])
                   basis_vectors::AbstractVector{<:AbstractVector{<:Real}}
     )
 
-Calculates the squareness of the unit cell, where squareness = side 1/side 2   
+    Calculates the squareness of the unit cell, where squareness = side 1/side 2   
 """
 function uc_squareness(
     basis_vectors::AbstractVector{<:AbstractVector{<:Real}}
@@ -320,7 +320,7 @@ end
     uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
         -> Real
 
-Calculate the area of a parallelogram of two basis vectors.
+    Calculate the area of a parallelogram of two basis vectors.
 """
 function uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
     if length(basis_vectors) != 2
@@ -330,7 +330,9 @@ function uc_area(basis_vectors::AbstractVector{<:AbstractVector{<:Real}})
           [basis_vectors[2]..., 0])[3])
 end
 
-"""Calculate the angle (0-360deg) of a vector wrt the vector [1,0]."""
+"""
+    Calculate the angle (0-360deg) of a vector wrt the vector [1,0].
+"""
 function uc_angle(basis_vector::AbstractVector{<:Real})
     (y,x) = basis_vector
     if x == 0f0 || y == 0f0
@@ -352,7 +354,7 @@ end
     uc_angle(vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
         -> Real
 
-Calculate the angle between two vectors.
+    Calculate the angle between two vectors.
 """
 function uc_angle(vectors::AbstractVector{<:AbstractVector{<:Real}})
     if length(vectors) != 2
@@ -376,7 +378,7 @@ end
         tolerance
     )
 
-Checks if two unit cells are different
+    Checks if two unit cells are different
 """
 function is_different_unit_cell(
     uc_1,

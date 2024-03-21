@@ -44,28 +44,28 @@ end
         thresholding_parameters::ThresholdingParameters
         )
 
-Check the validity of thresholding parameters.
+    Check the validity of thresholding parameters.
 
-This function validates the provided thresholding parameters. The function checks whether 
-the threshold is within the range (0, 1), the window size is greater than or equal to 1, 
-and the minimum atom size is greater than or equal to 1. If any of these conditions is not 
-met, a `DomainError` is thrown.
+    This function validates the provided thresholding parameters. The function checks whether 
+    the threshold is within the range (0, 1), the window size is greater than or equal to 1, 
+    and the minimum atom size is greater than or equal to 1. If any of these conditions is not 
+    met, a `DomainError` is thrown.
 
-# Arguments
-  - `thresholding_parameters::ThresholdingParameters`: 
-    A struct containing thresholding parameters.
+    # Arguments
+    - `thresholding_parameters::ThresholdingParameters`: 
+        A struct containing thresholding parameters.
 
-# Throws
-  - `DomainError`: 
-    If any of the thresholding parameters do not meet the specified criteria.
+    # Throws
+    - `DomainError`: 
+        If any of the thresholding parameters do not meet the specified criteria.
 
-# Examples
-```julia
-params = ThresholdingParameters(0.5, 5, 2)
-check_thresholding_parameters(params)  # No error will be thrown
+    # Examples
+    ```julia
+    params = ThresholdingParameters(0.5, 5, 2)
+    check_thresholding_parameters(params)  # No error will be thrown
 
-params = ThresholdingParameters(1.2, 5, 2)
-check_thresholding_parameters(params)  # Throws DomainError
+    params = ThresholdingParameters(1.2, 5, 2)
+    check_thresholding_parameters(params)  # Throws DomainError
 """
 function check_thresholding_parameters(
     thresholding_parameters::ThresholdingParameters
@@ -112,15 +112,15 @@ end
         ) 
         -> Tuple(Matrix{Float32}, Vector{Float32}, Vector{Float32}, Matrix{Gray{Float32}})
 
-Detect atoms in `image` using thresholding. Adaptive thresholding is used by default.
+    Detect atoms in `image` using thresholding. Adaptive thresholding is used by default.
 
-If `threshold` is undefined, determine the optimum threshold value automatically.
-If `use_adaptive` is set true, a Niblack adaptive thresholding algorithm is used instead.
-The adaptive thresholding can be controlled using the `window_size` and `bias` parameters. 
-`min_atom_size` defines the minimum number of pixels an atom must have.
+    If `threshold` is undefined, determine the optimum threshold value automatically.
+    If `use_adaptive` is set true, a Niblack adaptive thresholding algorithm is used instead.
+    The adaptive thresholding can be controlled using the `window_size` and `bias` parameters. 
+    `min_atom_size` defines the minimum number of pixels an atom must have.
 
-Returns a 2 x n matrix of atom centroids, a size n vector of atom widths,
-a size n vector of atom intensities and the binarized image. 
+    Returns a 2 x n matrix of atom centroids, a size n vector of atom widths,
+    a size n vector of atom intensities and the binarized image. 
 """
 function find_atoms(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
@@ -143,18 +143,18 @@ end
 """
     find_optimum_threshold(image::Matrix{Gray{<:AbstractFloat}}) -> Float32
 
-Finds the optimum global threshold value for detecting atoms in `image`. 
+    Finds the optimum global threshold value for detecting atoms in `image`. 
 
-The optimal value is the value for which the number of connected components
-in the image is maximized.
+    The optimal value is the value for which the number of connected components
+    in the image is maximized.
 
-## Example 
-```
-    julia> image = rand(Float32, 100, 100)
-    100x100 Matrix{Float32}
-    julia> threshold = find_optimum_threshold(image)
-    0.27
-```
+    ## Example 
+    ```
+        julia> image = rand(Float32, 100, 100)
+        100x100 Matrix{Float32}
+        julia> threshold = find_optimum_threshold(image)
+        0.27
+    ```
 """
 function find_optimum_threshold(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
@@ -177,27 +177,27 @@ end
         thresholding_parameters::ThresholdingParameters
     )
 
-Binarize the input image using the specified thresholding parameters.
+    Binarize the input image using the specified thresholding parameters.
 
-This function takes an input image and thresholding parameters and produces a binarized 
-version of the image. If `thresholding_parameters.use_adaptive` is false, a global threshold 
-is applied to the image. If `thresholding_parameters.use_adaptive` is true, an adaptive 
-thresholding algorithm is used.
+    This function takes an input image and thresholding parameters and produces a binarized 
+    version of the image. If `thresholding_parameters.use_adaptive` is false, a global threshold 
+    is applied to the image. If `thresholding_parameters.use_adaptive` is true, an adaptive 
+    thresholding algorithm is used.
 
-# Arguments
-- `image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}`: 
-    The input image to be binarized. It can be a grayscale image or a matrix of real values.
-- `thresholding_parameters::ThresholdingParameters`: 
-    A struct containing thresholding parameters.
+    # Arguments
+    - `image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}`: 
+        The input image to be binarized. It can be a grayscale image or a matrix of real values.
+    - `thresholding_parameters::ThresholdingParameters`: 
+        A struct containing thresholding parameters.
 
-# Returns
-- `binarized_image::BitMatrix`: The resulting binarized image represented as a BitMatrix.
+    # Returns
+    - `binarized_image::BitMatrix`: The resulting binarized image represented as a BitMatrix.
 
-# Examples
-```julia
-image = rand(Gray, 256, 256)
-params = ThresholdingParameters(0.5, 5, 2, false)
-binarized_result = binarize_image(image, params)
+    # Examples
+    ```julia
+    image = rand(Gray, 256, 256)
+    params = ThresholdingParameters(0.5, 5, 2, false)
+    binarized_result = binarize_image(image, params)
 """
 function binarize_image(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}, 
@@ -222,29 +222,29 @@ end
         thresholding_parameters::ThresholdingParameters
     )
 
-Extract atom parameters from a binarized image using the specified thresholding parameters.
+    Extract atom parameters from a binarized image using the specified thresholding parameters.
 
-This function analyzes a binarized image to identify connected components (atoms) and 
-extracts relevant parameters such as centroids, sizes, intensities, and  ellipiticity 
-angles. The extraction process is based on the provided thresholding parameters.
+    This function analyzes a binarized image to identify connected components (atoms) and 
+    extracts relevant parameters such as centroids, sizes, intensities, and  ellipiticity 
+    angles. The extraction process is based on the provided thresholding parameters.
 
-# Arguments
-- `binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}`: 
-    The binarized image representing identified components.
-- `image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}`: 
-    The original image from which atom parameters are extracted.
-- `thresholding_parameters::ThresholdingParameters`: 
-    A struct containing thresholding parameters.
+    # Arguments
+    - `binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}`: 
+        The binarized image representing identified components.
+    - `image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}`: 
+        The original image from which atom parameters are extracted.
+    - `thresholding_parameters::ThresholdingParameters`: 
+        A struct containing thresholding parameters.
 
-# Returns
-- `AtomParameters`:
-    A struct containing extracted atom parameters, including `centroids`, `sizes`, 
-        `intensities`, and `angles`.
+    # Returns
+    - `AtomParameters`:
+        A struct containing extracted atom parameters, including `centroids`, `sizes`, 
+            `intensities`, and `angles`.
 
-# Examples
-```julia
-binarized_image = binarize_image(image, thresholding_params)
-atom_params = get_atom_parameters(binarized_image, image, thresholding_params)
+    # Examples
+    ```julia
+    binarized_image = binarize_image(image, thresholding_params)
+    atom_params = get_atom_parameters(binarized_image, image, thresholding_params)
 """
 function get_atom_parameters(
     binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
@@ -282,23 +282,23 @@ end
         centroid_vector::Vector{<:Tuple{<:Real, <:Real}}
         )
 
-Convert a vector of centroid tuples to a 2xn matrix.
+    Convert a vector of centroid tuples to a 2xn matrix.
 
-This function takes a vector of centroid tuples, where each tuple represents a 2D 
-coordinate (x, y), and converts it into a 2xn matrix, where n is the number of centroids. 
+    This function takes a vector of centroid tuples, where each tuple represents a 2D 
+    coordinate (x, y), and converts it into a 2xn matrix, where n is the number of centroids. 
 
-# Arguments
-- `centroid_vector::Vector{<:Tuple{<:Real, <:Real}}`: 
-    A vector of 2D centroid tuples.
+    # Arguments
+    - `centroid_vector::Vector{<:Tuple{<:Real, <:Real}}`: 
+        A vector of 2D centroid tuples.
 
-# Returns
-- `centroid_matrix::Matrix{<:Real}`: 
-    A 2xn matrix containing the x and y coordinates of centroids.
+    # Returns
+    - `centroid_matrix::Matrix{<:Real}`: 
+        A 2xn matrix containing the x and y coordinates of centroids.
 
-# Examples
-```julia
-centroid_vector = [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)]
-matrix_result = centroid_vector_to_matrix(centroid_vector)
+    # Examples
+    ```julia
+    centroid_vector = [(1.0, 2.0), (3.0, 4.0), (5.0, 6.0)]
+    matrix_result = centroid_vector_to_matrix(centroid_vector)
 """
 function centroid_vector_to_matrix(
     centroid_vector::Vector{<:Tuple{<:Real, <:Real}}
@@ -309,29 +309,29 @@ end
 """
     ellipticities(component_labels::AbstractMatrix{Int})
 
-Calculate sizes and ellipticities of connected components in a labeled component image.
+    Calculate sizes and ellipticities of connected components in a labeled component image.
 
-This function takes a matrix of component labels and calculates the sizes and ellipticities 
-of connected components. The components are represented by integer labels in the input matrix.
+    This function takes a matrix of component labels and calculates the sizes and ellipticities 
+    of connected components. The components are represented by integer labels in the input matrix.
 
-# Arguments
-- `component_labels::AbstractMatrix{Int}`: 
-    A matrix where each element represents the label of the connected component to which the 
-    corresponding pixel belongs.
+    # Arguments
+    - `component_labels::AbstractMatrix{Int}`: 
+        A matrix where each element represents the label of the connected component to which the 
+        corresponding pixel belongs.
 
-# Returns
-- `(sizes::Matrix{Float64}, angles::Vector{Float64})`: 
-    A tuple containing the sizes and ellipticities of connected components. 
-  - `sizes`: 
-    A 2xn matrix, where n is the number of connected components. Each column contains the width 
-    and height of the corresponding component.
-  - `angles`: 
-    A vector containing the ellipticity angles (in radians) of the connected components.
+    # Returns
+    - `(sizes::Matrix{Float64}, angles::Vector{Float64})`: 
+        A tuple containing the sizes and ellipticities of connected components. 
+    - `sizes`: 
+        A 2xn matrix, where n is the number of connected components. Each column contains the width 
+        and height of the corresponding component.
+    - `angles`: 
+        A vector containing the ellipticity angles (in radians) of the connected components.
 
-# Examples
-```julia
-labels_matrix = [1 1 0; 0 2 2; 3 0 3]
-(sizes_result, angles_result) = ellipticities(labels_matrix)
+    # Examples
+    ```julia
+    labels_matrix = [1 1 0; 0 2 2; 3 0 3]
+    (sizes_result, angles_result) = ellipticities(labels_matrix)
 """
 function ellipticities(
     component_labels::AbstractMatrix{Int}
@@ -361,29 +361,29 @@ end
 """
     atom_sizes(coordinates::AbstractMatrix{<:Real})
 
-Calculate the size and ellipticity angle of an atom based on the coordinates of pixels in
-the component representing it.
+    Calculate the size and ellipticity angle of an atom based on the coordinates of pixels in
+    the component representing it.
 
-This function takes a matrix of 2D coordinates of a component and calculates the size and 
-ellipticity angle. The size is determined by the eigenvalues of the covariance matrix, and 
-the ellipticity angle is calculated from the eigenvectors.
+    This function takes a matrix of 2D coordinates of a component and calculates the size and 
+    ellipticity angle. The size is determined by the eigenvalues of the covariance matrix, and 
+    the ellipticity angle is calculated from the eigenvectors.
 
-# Arguments
-  - `coordinates::AbstractMatrix{<:Real}`: 
-    A 2xn matrix representing the 2D coordinates of the pixels.
+    # Arguments
+    - `coordinates::AbstractMatrix{<:Real}`: 
+        A 2xn matrix representing the 2D coordinates of the pixels.
 
-# Returns
-- `(atom_size::Vector{Float64}, ellipticity_angle::Float64)`: 
-    A tuple containing the size and ellipticity angle of the atom. 
-  - `atom_size`: 
-    A vector containing the width and height of the atom.
-  - `ellipticity_angle`: 
-    The ellipticity angle in degrees.
+    # Returns
+    - `(atom_size::Vector{Float64}, ellipticity_angle::Float64)`: 
+        A tuple containing the size and ellipticity angle of the atom. 
+    - `atom_size`: 
+        A vector containing the width and height of the atom.
+    - `ellipticity_angle`: 
+        The ellipticity angle in degrees.
 
-# Examples
-```julia
-atom_coordinates = [1.0 2.0; 3.0 4.0; 5.0 6.0]
-(size_result, angle_result) = atom_sizes(atom_coordinates)
+    # Examples
+    ```julia
+    atom_coordinates = [1.0 2.0; 3.0 4.0; 5.0 6.0]
+    (size_result, angle_result) = atom_sizes(atom_coordinates)
 """
 function atom_sizes(coordinates::AbstractMatrix{<:Real})
 

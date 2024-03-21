@@ -13,13 +13,13 @@
 """
     DbscanCluster
 
-DBSCAN cluster returned by [`dbscan`](@ref) function (point coordinates-based
-implementation)
+    DBSCAN cluster returned by [`dbscan`](@ref) function (point coordinates-based
+    implementation)
 
-# Fields
- * `size::Integer`: number of points in a cluster (core + boundary)
- * `core_indices::Vector{<:Integer}`: indices of points in the cluster *core*
- * `boundary_indices::Vector{<:Integer}`: indices of points on the cluster *boundary*
+    # Fields
+    * `size::Integer`: number of points in a cluster (core + boundary)
+    * `core_indices::Vector{<:Integer}`: indices of points in the cluster *core*
+    * `boundary_indices::Vector{<:Integer}`: indices of points on the cluster *boundary*
 """
 struct DbscanCluster
     size::Integer                      # number of points in cluster
@@ -33,28 +33,28 @@ end
     dbscan(points::AbstractMatrix, radius::Real,
            [leafsize], [min_neighbors], [min_cluster_size]) -> Vector{DbscanCluster}
 
-Cluster `points` using the DBSCAN (density-based spatial clustering of
-applications with noise) algorithm.
+    Cluster `points` using the DBSCAN (density-based spatial clustering of
+    applications with noise) algorithm.
 
-# Arguments
- - `points`: the ``d×n`` matrix of points. `points[:, j]` is a
-   ``d``-dimensional coordinates of ``j``-th point
- - `radius::Real`: query radius
+    # Arguments
+    - `points`: the ``d×n`` matrix of points. `points[:, j]` is a
+    ``d``-dimensional coordinates of ``j``-th point
+    - `radius::Real`: query radius
 
-Optional keyword arguments to control the algorithm:
- - `leafsize::Integer` (defaults to 20): the number of points binned in each
-   leaf node in the `KDTree`
- - `min_neighbors::Integer` (defaults to 1): the minimum number of a *core* point
-   neighbors
- - `min_cluster_size::Integer` (defaults to 1): the minimum number of points in
-   a valid cluster
+    Optional keyword arguments to control the algorithm:
+    - `leafsize::Integer` (defaults to 20): the number of points binned in each
+    leaf node in the `KDTree`
+    - `min_neighbors::Integer` (defaults to 1): the minimum number of a *core* point
+    neighbors
+    - `min_cluster_size::Integer` (defaults to 1): the minimum number of points in
+    a valid cluster
 
-# Example
-``` julia
-points = randn(3, 10000)
-# DBSCAN clustering, clusters with less than 20 points will be discar ded:
-clusters = dbscan(points, 0.05, min_neighbors = 3, min_cluster_size = 20)
-```
+    # Example
+    ``` julia
+    points = randn(3, 10000)
+    # DBSCAN clustering, clusters with less than 20 points will be discar ded:
+    clusters = dbscan(points, 0.05, min_neighbors = 3, min_cluster_size = 20)
+    ```
 """
 function dbscan(
                 points::AbstractMatrix, 
@@ -143,12 +143,12 @@ end
 """
     update_exploration_list!(adj_list, exploration_list, visited) -> adj_list
 
-Update the queue for expanding the cluster.
+    Update the queue for expanding the cluster.
 
-# Arguments
-- `adj_list::Vector{<:Integer}`: indices of the neighboring points to move to queue
-- `exploration_list::Vector{<:Integer}`: the indices that will be explored in the future
-- `visited::BitVector`: a flag indicating whether a point has been explored already
+    # Arguments
+    - `adj_list::Vector{<:Integer}`: indices of the neighboring points to move to queue
+    - `exploration_list::Vector{<:Integer}`: the indices that will be explored in the future
+    - `visited::BitVector`: a flag indicating whether a point has been explored already
 """
 function update_exploration_list!(adj_list::Vector{T}, exploration_list::Vector{T},
                                   visited::BitVector) where T <: Integer
@@ -162,12 +162,12 @@ end
 """
     accept_cluster!(clusters, core_selection, cluster_selection) -> clusters
 
-Accept cluster and update the clusters list.
+    Accept cluster and update the clusters list.
 
-# Arguments
-- `clusters::Vector{DbscanCluster}`: a list of the accepted clusters
-- `core_selection::Vector{Bool}`: selection of the core points of the cluster
-- `cluster_selection::Vector{Bool}`: selection of all the cluster points
+    # Arguments
+    - `clusters::Vector{DbscanCluster}`: a list of the accepted clusters
+    - `core_selection::Vector{Bool}`: selection of the core points of the cluster
+    - `cluster_selection::Vector{Bool}`: selection of all the cluster points
 """
 function accept_cluster!(clusters::Vector{DbscanCluster}, core_selection::BitVector,
                          cluster_selection::BitVector, cluster_size::Integer)

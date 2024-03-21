@@ -12,7 +12,7 @@
     )
     -> Matrix{<:Gray{Float32}}
 
-Load an image from a file.    
+    Load an image from a file.    
 """
 function load_image(
                     filename::String;
@@ -39,15 +39,15 @@ end
     ) 
     -> Matrix{<:Gray{<:AbstractFloat}}
 
-Filter the image using Singular Value Decomposition and Gaussian convolution.
+    Filter the image using Singular Value Decomposition and Gaussian convolution.
 
-`number_of_singular_vectors` is the number of singular values to use. If set to :auto, 
-it will be determined automatically. `kernel_size` is the size of the gaussian kernel 
-that is used for the convolution. For low-resolution images, set `kernel_size = 1`. 
-If the `gaussian_convolution_only` parameter is set to true, no SVD filtering is done
-and only a gaussian convolution is applied to the image. Possibly useful for images with
-no or little translational symmetry. If `plot` is set to true, a plot will be generated
-of the power of each singular vector of the image for diagnostic purposes.
+    `number_of_singular_vectors` is the number of singular values to use. If set to :auto, 
+    it will be determined automatically. `kernel_size` is the size of the gaussian kernel 
+    that is used for the convolution. For low-resolution images, set `kernel_size = 1`. 
+    If the `gaussian_convolution_only` parameter is set to true, no SVD filtering is done
+    and only a gaussian convolution is applied to the image. Possibly useful for images with
+    no or little translational symmetry. If `plot` is set to true, a plot will be generated
+    of the power of each singular vector of the image for diagnostic purposes.
 """
 function filter_image(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}};
@@ -99,7 +99,7 @@ end
     stretch_image(image::AbstractMatrix)
     -> AbstractMatrix
 
-Makes sure all values of image lie in the range (0,1)
+    Makes sure all values of image lie in the range (0,1)
 """
 function stretch_image(image::AbstractMatrix)
     image_extrema = extrema(image)
@@ -114,9 +114,9 @@ end
         )
     -> AbstractMatrix
 
-Calculates the absolute difference between two images, returns the difference image
-with all values in the range (0,1). If `no_text = false`, the total residual value 
-and maximum single pixel deviation are printed to stdout.
+    Calculates the absolute difference between two images, returns the difference image
+    with all values in the range (0,1). If `no_text = false`, the total residual value 
+    and maximum single pixel deviation are printed to stdout.
 """
 function residual_image(
     image_1::AbstractMatrix, 
@@ -138,7 +138,7 @@ end
         ) 
     -> AbstractMatrix
 
-Enlarges `image` by a factor of `factor`. Returns the enlarged image.
+    Enlarges `image` by a factor of `factor`. Returns the enlarged image.
 """
 function enlarge_image(
     image::AbstractMatrix{T},
@@ -155,8 +155,8 @@ end
         ) 
     -> AbstractMatrix
 
-Downscales `image` by a factor of `factor`. The new pixel values are the mean
-of blocks of `factor` x `factor` pixels in the original image. Returns the smaller image.
+    Downscales `image` by a factor of `factor`. The new pixel values are the mean
+    of blocks of `factor` x `factor` pixels in the original image. Returns the smaller image.
 """
 function downscale_image(
     image::AbstractMatrix{T}, 
