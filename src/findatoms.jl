@@ -255,7 +255,7 @@ function get_atom_parameters(
     component_labels = label_components(binarized_image)
 
     #The first element corresponds to the background
-    centroid_vector = component_centroids(component_labels)[2:end]
+    centroid_vector = component_centroids(component_labels)[1:end]
     #Turn the centroids vector into a 2 x n matrix
     centroid_matrix = centroid_vector_to_matrix(centroid_vector)
 
