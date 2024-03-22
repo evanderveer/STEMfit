@@ -1,10 +1,10 @@
-#
-#File: findatoms.jl
-#Author: Ewout van der Veer
-#
-#Description:
-#Functions for finding atoms in an image.
-#
+"""
+File: findatoms.jl
+Author: Ewout van der Veer
+
+Description:
+Functions for finding atoms in an image.
+"""
 
 const ELLIPTICITY_CUTOFF = 1
 struct ThresholdingParameters
@@ -98,7 +98,7 @@ function AtomParameters(
     sizes::Matrix{T},
     intensities::Vector{T},
     angles::Vector{T}
-) where {T<:Real}
+    ) where {T<:Real}
     if !(size(centroids, 2) == size(sizes, 2) == length(intensities) == length(angles))
         throw(ArgumentError("atom parameters lists do not have the same length"))
     end
@@ -125,7 +125,7 @@ end
 function find_atoms(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
     thresholding_parameters::ThresholdingParameters
-)   
+    )   
 
     binarized_image = binarize_image(image, thresholding_parameters)
 
@@ -136,39 +136,6 @@ function find_atoms(
     end
 
     (atom_parameters, binarized_image)
-end
-
-
-
-"""
-    find_optimum_threshold(image::Matrix{Gray{<:AbstractFloat}}) -> Float32
-
-    Finds the optimum global threshold value for detecting atoms in `image`. 
-
-    The optimal value is the value for which the number of connected components
-    in the image is maximized.
-
-    ## Example 
-    ```
-        julia> image = rand(Float32, 100, 100)
-        100x100 Matrix{Float32}
-        julia> threshold = find_optimum_threshold(image)
-        0.27
-    ```
-"""
-function find_optimum_threshold(
-    image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}
-)
-
-    lab_max  = Matrix(undef, 91,2)
-    Threads.@threads for (idx,i) in collect(enumerate(0.05:0.01:0.95)) 
-        bw = image .> i;
-        labels = label_components(bw)
-        lab_max[idx, :] = [i maximum(labels)]
-    end
-
-    max_index = findall(x -> x == maximum(lab_max[:,2]), lab_max)
-    lab_max[max_index[1][1], 1]
 end
 
 """
@@ -202,7 +169,7 @@ end
 function binarize_image(
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}}, 
     thresholding_parameters::ThresholdingParameters
-)
+    )
     if !thresholding_parameters.use_adaptive
         optimum_threshold = (iszero(thresholding_parameters.threshold) ? 
                              find_optimum_threshold(image) : 
@@ -250,12 +217,12 @@ function get_atom_parameters(
     binarized_image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
     image::Union{AbstractMatrix{<:Gray{<:Real}}, AbstractMatrix{<:Real}},
     thresholding_parameters::ThresholdingParameters
-)
+    )
 
     component_labels = label_components(binarized_image)
 
     #The first element corresponds to the background
-    centroid_vector = component_centroids(component_labels)[1:end]
+    centroid_vector = component_centroids(component_labels)[2:end]
     #Turn the centroids vector into a 2 x n matrix
     centroid_matrix = centroid_vector_to_matrix(centroid_vector)
 
@@ -335,7 +302,7 @@ end
 """
 function ellipticities(
     component_labels::AbstractMatrix{Int}
-)
+    )
     number_of_atoms = maximum(component_labels)
 
     sizes = Matrix{Float64}(undef, 2, number_of_atoms)

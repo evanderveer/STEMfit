@@ -1,10 +1,19 @@
+"""
+File: fileio.jl
+Author: Ewout van der Veer
+
+Description:
+Functions for loading and saving results. 
+    
+"""
+
 function save_atomic_parameters_mat(
     filename::String,
     atom_parameters::AbstractMatrix{<:Real},
     lattice_parameters::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
     strain::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
     valid_atoms::Union{AbstractVector{Bool}, Nothing} = nothing
-)
+    )
     if all([atom_parameters, lattice_parameters, strain, valid_atoms] .=== nothing)
         throw(ArgumentError("no data was provided"))
     end
@@ -44,7 +53,7 @@ function save_atomic_parameters(
     lattice_parameters::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
     strain::Union{AbstractMatrix{<:Real}, Nothing} = nothing,
     valid_atoms::Union{AbstractVector{Bool}, Nothing} = nothing
-)
+    )
     atom_parameters_matrix = [atom_parameters.centroids; 
                        atom_parameters.intensities';
                        atom_parameters.sizes;
@@ -60,7 +69,7 @@ function save_atomic_parameters(
     filename::String,
     results::Results,
 
-)
+    )
     
     save_atomic_parameters(filename,
                            results.atom_parameters,

@@ -97,6 +97,7 @@ module STEMfit
     #include("imagemodel.jl")
     #include("background.jl")
     include("latticeparameter.jl")
+    include("strainnew.jl")
     #include("gaussianfitting.jl")
     include("plotting.jl")
     include("mapping.jl")

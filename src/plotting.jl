@@ -4,7 +4,6 @@ Author: Ewout van der Veer
 
 Description:
 Functions for plotting and saving of results.
-    
 """
 
 function get_ellipticities(
