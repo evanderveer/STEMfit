@@ -33,7 +33,7 @@ UnitCell(volume,
                     filter_tolerance::Real = 10,
                     use_all_atoms::Bool = false,
                     plot::Bool = true,
-                    uc_to_plot::UnitRange = 1:8
+                    max_uc_to_plot::Int = 8
                     ])
                     -> Tuple{Matrix{Any}, Matrix{<:AbstractFloat}, KDTree}
 
@@ -57,7 +57,7 @@ UnitCell(volume,
     - `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
     - `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
     - `plot::Bool = true`: Determines whether unit cells are plotted 
-    - `uc_to_plot::UnitRange = 1:8`: Determines how many unit cells to plot 
+    - `max_uc_to_plot::Int = 8`: Determines how many unit cells to plot 
 """
 function find_unit_cells(
     atom_parameters::AtomParameters;
@@ -71,7 +71,7 @@ function find_unit_cells(
     filter_tolerance::Real = 0.1,
     use_all_atoms::Bool = false,
     plot::Bool = true,
-    uc_to_plot::UnitRange = 1:8
+    max_uc_to_plot::Int = 8
 )
 
     centroids = atom_parameters.centroids
@@ -109,7 +109,8 @@ function find_unit_cells(
                                 )
 
     if plot
-        plot_unit_cells(sorted_uc[uc_to_plot], neighbors)
+        uc_to_plot = minimum([length(sorted_uc), max_uc_to_plot])
+        plot_unit_cells(sorted_uc[1:uc_to_plot], neighbors)
     end
 
     return (sorted_uc, neighbors, atom_tree)
