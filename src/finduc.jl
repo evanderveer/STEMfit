@@ -28,6 +28,7 @@ UnitCell(volume,
                     min_cluster_size::Integer = 50,
                     uc_allowed_areas::UnitRange{<:Real} = 10:Inf,
                     uc_allowed_angles::UnitRange{<:Real} = 5:360,
+                    uc_allowed_orientation::UnitRange{<:Real} = 0:360,
                     min_neighbor_dist::Real = 5,
                     filter_tolerance::Real = 10,
                     use_all_atoms::Bool = false,
@@ -49,8 +50,9 @@ UnitCell(volume,
     - `num_nn::Integer = 40`: Number of nearest neighbors to find for each centroid
     - `cluster_radius::Real = 0.05`: *radius* parameter used by DBSCAN
     - `min_cluster_size::Integer = 1000`: *min_cluster_size* parameter used by DBSCAN
-    - `uc_allowed_areas::Tuple{Real, Real} = (10, Inf)`: Range of allowed unit cell areas
-    - `uc_allowed_angles::Tuple{Real, Real} = (85, 95)`: Range of allowed unit cell uc_angles
+    - `uc_allowed_areas::UnitRange{<:Real} = 10:Inf`: Range of allowed unit cell areas
+    - `uc_allowed_angles::UnitRange{<:Real} = 5:360`: Range of allowed unit cell uc_angles
+    - `uc_allowed_orientation::UnitRange{<:Real} = 0:360`: Range of allowed unit cell in-plane orientations
     - `min_neighbor_dist::Real = 15`: Minimum neighbor distance, removes spurious neighbors
     - `filter_tolerance::Real = 10`: Minimum relative angle and area difference between unit cells
     - `use_all_atoms::Bool = false`: Determines whether all atoms are used to find unit cells 
@@ -64,6 +66,7 @@ function find_unit_cells(
     min_cluster_size::Union{<:Integer, Symbol} = :auto,
     uc_allowed_areas::UnitRange{<:Real} = 10:1000000,
     uc_allowed_angles::UnitRange{<:Real} = 5:360,
+    uc_allowed_orientation::UnitRange{<:Real} = 0:360,
     min_neighbor_dist::Union{<:Real, Symbol} = :auto,
     filter_tolerance::Real = 0.1,
     use_all_atoms::Bool = false,
@@ -101,6 +104,7 @@ function find_unit_cells(
                                 neighbors, 
                                 uc_allowed_angles=uc_allowed_angles, 
                                 uc_allowed_areas=uc_allowed_areas,
+                                uc_allowed_orientation=uc_allowed_orientation,
                                 tolerance=filter_tolerance
                                 )
 
@@ -220,6 +224,7 @@ function unit_cells_from_nn(
     neighbors::AbstractMatrix{<:AbstractFloat};
     uc_allowed_areas::UnitRange{<:Real},
     uc_allowed_angles::UnitRange{<:Real},
+    uc_allowed_orientation::UnitRange{<:Real},
     tolerance::Real = 0.05
 )
 
@@ -233,6 +238,7 @@ function unit_cells_from_nn(
     #Calculate unit cell volume, round to nearest integer
     uc_areas = round.(Int64, uc_area.(unit_cells))
     uc_angles = round.(Int64, uc_angle.(unit_cells))
+    uc_orientations = round.(Int64, uc_orientation.(unit_cells))
     uc_squareness = round.(Int64, STEMfit.uc_squareness.(unit_cells))
     
     uc_matrix = [uc_areas uc_angles uc_squareness unit_cells]
@@ -240,9 +246,10 @@ function unit_cells_from_nn(
     #Select only nonzero unit cells
     allowed_area = [i ∈ uc_allowed_areas for i in uc_areas]
     allowed_angle = [i ∈ uc_allowed_angles for i in uc_angles]
+    allowed_orientation = [i ∈ uc_allowed_orientation for i in uc_orientations]
 
     #Only select unit cells which have an allowed angle and area
-    allowed_ucs = uc_matrix[allowed_angle .&& allowed_area, :]
+    allowed_ucs = uc_matrix[allowed_angle .&& allowed_area .&& allowed_orientation, :]
     
     #Sort by unit cell volume
     sorted_ucs = allowed_ucs[sortperm(allowed_ucs[:, 1]), :]
@@ -369,6 +376,16 @@ function uc_angle(vectors::AbstractVector{<:AbstractVector{<:Real}})
         return 0f0
     end
     return angle
+end
+
+"""
+    uc_angle(vectors::AbstractVector{<:AbstractVector{<:AbstractFloat}})
+        -> Real
+
+    Calculate the orientation of the unit cell wrt the vector [1,0].
+"""
+function uc_orientation(vectors::AbstractVector{<:AbstractVector{<:Real}})
+    uc_angle(vectors[1])
 end
 
 """
