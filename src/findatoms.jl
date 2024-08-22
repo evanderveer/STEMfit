@@ -221,13 +221,14 @@ function get_atom_parameters(
 
     component_labels = label_components(binarized_image)
 
-    #The first element corresponds to the background
-    centroid_vector = component_centroids(component_labels)[2:end]
+    #Returns OffsetArray, the zeroth element corresponds to the background
+    centroid_vector = component_centroids(component_labels)[1:end]
     #Turn the centroids vector into a 2 x n matrix
     centroid_matrix = centroid_vector_to_matrix(centroid_vector)
 
     #The width of a cluster is appox. the square root of its area
     #sizes = (sqrt.(component_lengths(component_labels)))[2:end]
+    
     (size_matrix, ellipticity_angles) = ellipticities(component_labels)
 
     #Estimate the intesity from the image value at the cluster centroid

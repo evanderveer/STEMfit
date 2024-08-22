@@ -93,7 +93,7 @@ function plot_singular_vectors(
     singular_value_powers::AbstractVector{<:Real},
     number_of_singular_values::Int;
     kwargs...
-)
+    )
     x_limits = (0, round(Int, number_of_singular_values*2))
     y_limits = extrema(singular_value_powers[1:x_limits[2]]) .* (0.5, 2)
 
@@ -121,7 +121,7 @@ function plot_atomic_positions(
     c=:red,
     image_size = 3/4,
     kwargs...
-)
+    )
     p = plot(image)
     plot_size = (size(image,2), size(image,1)).*image_size
     scatter!(p, atom_positions[2,:], 
@@ -148,7 +148,7 @@ function plot_unit_cells( #Very ugly --> refactor
     unit_cells,
     neighbors;
     kwargs...
-)
+    )
     unit_cell(vectors) = Shape(
         [0,vectors[1][2], vectors[1][2]+vectors[2][2], vectors[2][2]],
         [0,vectors[1][1], vectors[1][1]+vectors[2][1], vectors[2][1]]
@@ -193,7 +193,7 @@ function plot_unit_cells( #Very ugly --> refactor
     xlim=(-70,70),
     ylim=(-70,70),
     kwargs...
-)
+    )
     unit_cell(vectors) = Shape(
         [0,vectors[1][2], vectors[1][2]+vectors[2][2], vectors[2][2]],
         [0,vectors[1][1], vectors[1][1]+vectors[2][1], vectors[2][1]]

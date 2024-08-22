@@ -33,11 +33,11 @@ function save_atomic_parameters_mat(
     end
 
     if lattice_parameters !== nothing
-        data_matrix = [data_matrix; ["vector 1 lp", "vector 1 lp"] lattice_parameters]
+        data_matrix = [data_matrix; ["vector 1 lp", "vector 2 lp"] lattice_parameters]
     end
 
     if strain !== nothing
-        data_matrix = [data_matrix; ["vector 1 strain", "vector 1 strain"] strain]
+        data_matrix = [data_matrix; ["vector 1 strain", "vector 2 strain"] strain]
     end
 
     if valid_atoms !== nothing
