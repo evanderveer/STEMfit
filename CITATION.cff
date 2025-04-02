@@ -1,0 +1,17 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: STEMfit
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Ewout
+    family-names: van der Veer
+    email: ewout.van.der.veer@rug.nl
+    affiliation: University of Groningen
+    orcid: 'https://orcid.org/0000-0001-6634-113X'
+repository-code: 'https://github.com/evanderveer/STEMfit'
+license: MIT
